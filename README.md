@@ -1,36 +1,65 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Sistem Absensi Sekolah
 
-## Getting Started
+Aplikasi absensi berbasis web untuk sekolah dengan tiga tingkat pengguna: Kepala Sekolah (Superadmin), Guru (Admin), dan Murid (User). Sistem ini menggunakan barcode untuk proses absensi dan menyediakan laporan yang dapat diekspor ke Excel.
 
-First, run the development server:
+## Fitur Utama
 
+- **Tiga Tingkat Pengguna**: Kepala Sekolah, Guru, dan Murid
+- **Absensi Menggunakan Barcode**: Pemindaian cepat dan akurat
+- **Manajemen Pengguna**: Tambah, edit, dan kelola pengguna
+- **Laporan Lengkap**: Harian, mingguan, dan bulanan
+- **Ekspor Excel**: Kemampuan ekspor data ke format Excel
+- **Penyimpanan Barcode**: Barcode dapat dicetak dan digunakan berulang
+
+## Teknologi yang Digunakan
+
+- **Frontend**: Next.js 14, TypeScript, Tailwind CSS
+- **Backend**: Supabase (PostgreSQL, Authentication)
+- **Barcode**: Zxing for scanning, JsBarcode for generation
+- **UI/UX**: Headless UI, Heroicons
+- **Ekspor Excel**: xlsx library
+
+## Instalasi
+
+1. Clone repository ini:
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+git clone <repository-url>
+cd attendance-web
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+2. Install dependensi:
+```bash
+npm install
+```
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+3. Buat file `.env.local` dan tambahkan konfigurasi Supabase:
+```env
+NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+4. Jalankan aplikasi:
+```bash
+npm run dev
+```
 
-## Learn More
+## Konfigurasi Database
 
-To learn more about Next.js, take a look at the following resources:
+1. Buat proyek di [Supabase](https://supabase.com)
+2. Gunakan skema database dari folder `database/migrations/`
+3. Terapkan migrasi SQL secara berurutan
+4. Perbarui file `.env.local` dengan URL dan anon key dari Supabase Anda
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Struktur Pengguna
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- **Kepala Sekolah (Superadmin)**: Dapat mengelola semua data, termasuk absensi guru
+- **Guru (Admin)**: Dapat mengelola absensi murid di kelasnya
+- **Murid (User)**: Dapat melihat riwayat kehadirannya sendiri
 
-## Deploy on Vercel
+## Kontribusi
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Kontribusi sangat dihargai! Silakan buat pull request untuk perbaikan atau tambahan fitur.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Lisensi
+
+Proyek ini dilisensikan di bawah MIT License.

@@ -1,23 +1,45 @@
 {
   "name": "attendance-web",
-  "version": "0.1.0",
-  "private": true,
+  "version": "1.0.0",
+  "description": "Aplikasi absensi berbasis web untuk sekolah dengan tiga tingkat pengguna: Kepala Sekolah (Superadmin), Guru (Admin), dan Murid (User). Sistem ini menggunakan barcode untuk proses absensi dan menyediakan laporan yang dapat diekspor ke Excel.",
+  "main": "index.js",
   "scripts": {
-    "dev": "next dev",
+    "dev": "HOST=127.0.0.1 next dev",
+    "dev-all": "HOST=0.0.0.0 next dev",
     "build": "next build",
-    "start": "next start",
-    "lint": "eslint"
+    "start": "HOST=127.0.0.1 next start",
+    "lint": "next lint",
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
+  "keywords": [
+    "attendance",
+    "school",
+    "absensi",
+    "barcode",
+    "supabase",
+    "nextjs"
+  ],
+  "author": "Sistem Absensi Sekolah",
+  "license": "MIT",
   "dependencies": {
+    "@headlessui/react": "^2.2.9",
+    "@heroicons/react": "^2.2.0",
+    "@supabase/ssr": "^0.8.0",
+    "@supabase/supabase-js": "^2.87.1",
+    "@zxing/library": "^0.21.3",
+    "jsbarcode": "^3.12.1",
     "next": "16.0.8",
     "react": "19.2.1",
-    "react-dom": "19.2.1"
+    "react-dom": "19.2.1",
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@types/jsbarcode": "^1.2.0",
+    "@types/xlsx": "^0.0.36",
     "eslint": "^9",
     "eslint-config-next": "16.0.8",
     "tailwindcss": "^4",

@@ -1,0 +1,9 @@
+{
+  "scripts": {
+    "dev": "HOST=0.0.0.0 next dev",
+    "dev-safe": "HOST=127.0.0.1 next dev",
+    "build": "next build",
+    "start": "HOST=127.0.0.1 next start",
+    "lint": "next lint"
+  }
+}
