@@ -4,7 +4,10 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { hashPassword } from '@/lib/jwtAuth';
 import Link from 'next/link';
-import sql from '@/lib/neonClient';
+import getNeonClient from '@/lib/neonClient';
+
+// Force dynamic rendering to avoid build-time database access
+export const dynamic = 'force-dynamic';
 
 export default function SignupPage() {
   const [email, setEmail] = useState('');
@@ -25,6 +28,12 @@ export default function SignupPage() {
     try {
       // Hash the password
       const hashedPassword = await hashPassword(password);
+
+      // Get the database client
+      const sql = getNeonClient();
+      if (!sql) {
+        throw new Error('Database client not available');
+      }
 
       // Insert the new user into the database
       const result = await sql`INSERT INTO users (email, password, namaLengkap, nomorInduk, role) VALUES (${email}, ${hashedPassword}, ${namaLengkap}, ${nomorInduk}, ${userRole}) RETURNING *`;

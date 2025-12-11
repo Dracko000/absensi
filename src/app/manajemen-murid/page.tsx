@@ -6,7 +6,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import Header from '@/components/Header';
 import Sidebar from '@/components/Sidebar';
 import { hashPassword } from '@/lib/jwtAuth';
-import sql from '@/lib/neonClient';
+import getNeonClient from '@/lib/neonClient';
+const sql = getNeonClient();
 
 export default function ManajemenMuridPage() {
   const router = useRouter();
@@ -30,8 +31,15 @@ export default function ManajemenMuridPage() {
 
   const fetchMuridList = async () => {
     try {
+      // Get the database client
+      const dbClient = getNeonClient();
+      if (!dbClient) {
+        alert('Database tidak tersedia');
+        return;
+      }
+
       // Fetch all users with role 'user' (students) from the database
-      const result = await sql`SELECT id, email, namaLengkap, nomorInduk, role, createdAt, updatedAt FROM users WHERE role = 'user'`;
+      const result = await dbClient`SELECT id, email, namaLengkap, nomorInduk, role, createdAt, updatedAt FROM users WHERE role = 'user'`;
       setMuridList(result);
     } catch (error: any) {
       console.error('Error fetching murid list:', error);
@@ -43,11 +51,18 @@ export default function ManajemenMuridPage() {
     e.preventDefault();
 
     try {
+      // Get the database client
+      const dbClient = getNeonClient();
+      if (!dbClient) {
+        alert('Database tidak tersedia');
+        return;
+      }
+
       // Hash the password
       const hashedPassword = await hashPassword(formData.password);
 
       // Add the new murid to the database
-      const result = await sql`INSERT INTO users (email, password, namaLengkap, nomorInduk, role)
+      const result = await dbClient`INSERT INTO users (email, password, namaLengkap, nomorInduk, role)
                                VALUES (${formData.email}, ${hashedPassword}, ${formData.namaLengkap}, ${formData.nomorInduk}, 'user')
                                RETURNING *`;
 

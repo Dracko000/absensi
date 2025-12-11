@@ -1,6 +1,7 @@
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
-import sql from './neonClient';
+import getNeonClient from './neonClient';
+const sql = getNeonClient();
 
 // Define User type based on our schema
 interface User {
@@ -53,8 +54,15 @@ export const comparePassword = async (password: string, hashedPassword: string):
 // Authenticate a user by email and password
 export const authenticateUser = async (email: string, password: string): Promise<User | null> => {
   try {
+    // Get the database client
+    const dbClient = getNeonClient();
+    if (!dbClient) {
+      console.error('Database client not available for authentication');
+      return null;
+    }
+
     // Query the user from Neon database
-    const result = await sql`SELECT id, email, password, namaLengkap, nomorInduk, role, createdAt, updatedAt FROM users WHERE email = ${email}`;
+    const result = await dbClient`SELECT id, email, password, namaLengkap, nomorInduk, role, createdAt, updatedAt FROM users WHERE email = ${email}`;
 
     if (result && result.length > 0) {
       const userData = result[0];

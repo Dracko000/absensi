@@ -7,7 +7,8 @@ import Header from '@/components/Header';
 import Sidebar from '@/components/Sidebar';
 import BarcodeScanner from '@/components/BarcodeScanner';
 import BarcodeGenerator from '@/components/BarcodeGenerator';
-import sql from '@/lib/neonClient';
+import getNeonClient from '@/lib/neonClient';
+const sql = getNeonClient();
 
 // Define AttendanceType as both type and constant for runtime usage
 type AttendanceType = 'guru' | 'murid';
@@ -43,8 +44,15 @@ export default function AbsensiGuruPage() {
 
   const fetchUserByBarcode = async (barcode: string) => {
     try {
+      // Get the database client
+      const dbClient = getNeonClient();
+      if (!dbClient) {
+        alert('Database tidak tersedia');
+        return;
+      }
+
       // Query the user from Neon database by barcode (which is stored as nomorInduk)
-      const result = await sql`SELECT id, email, password, namaLengkap, nomorInduk, role, createdAt, updatedAt FROM users WHERE nomorInduk = ${barcode}`;
+      const result = await dbClient`SELECT id, email, password, namaLengkap, nomorInduk, role, createdAt, updatedAt FROM users WHERE nomorInduk = ${barcode}`;
 
       if (result && result.length > 0) {
         const user = result[0];
@@ -76,8 +84,15 @@ export default function AbsensiGuruPage() {
     }
 
     try {
+      // Get the database client
+      const dbClient = getNeonClient();
+      if (!dbClient) {
+        alert('Database tidak tersedia');
+        return;
+      }
+
       // Check if attendance already exists for this user and date
-      const existingRecord = await sql`SELECT * FROM attendance_records WHERE userId = ${selectedUser.id} AND tanggal::date = ${tanggal}::date`;
+      const existingRecord = await dbClient`SELECT * FROM attendance_records WHERE userId = ${selectedUser.id} AND tanggal::date = ${tanggal}::date`;
 
       if (existingRecord && existingRecord.length > 0) {
         alert('Kehadiran untuk tanggal ini sudah dicatat');
@@ -88,7 +103,7 @@ export default function AbsensiGuruPage() {
       const date = new Date(tanggal);
       const now = new Date(); // Current time for jamMasuk
 
-      const result = await sql`INSERT INTO attendance_records (userId, tanggal, jamMasuk, jenisAbsensi, barcode, keterangan)
+      const result = await dbClient`INSERT INTO attendance_records (userId, tanggal, jamMasuk, jenisAbsensi, barcode, keterangan)
                                VALUES (${selectedUser.id}, ${date}, ${now}, ${AttendanceType.guru}, ${scannedBarcode || selectedUser.nomorInduk}, ${keterangan})
                                RETURNING *`;
 

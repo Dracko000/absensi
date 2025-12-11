@@ -1,8 +1,11 @@
-import sql from './src/lib/neonClient';
+import getNeonClient from './src/lib/neonClient';
 
 async function testConnection() {
   try {
     console.log('Testing Neon database connection...');
+
+    // Get the Neon client
+    const sql = getNeonClient();
 
     // Test connection by running a simple query
     const result = await sql`SELECT NOW() as now`;

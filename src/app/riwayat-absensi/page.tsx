@@ -5,7 +5,8 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import Header from '@/components/Header';
 import Sidebar from '@/components/Sidebar';
-import sql from '@/lib/neonClient';
+import getNeonClient from '@/lib/neonClient';
+const sql = getNeonClient();
 
 // Define AttendanceType as both type and constant for runtime usage
 type AttendanceType = 'guru' | 'murid';
@@ -33,30 +34,37 @@ export default function RiwayatAbsensiPage() {
 
   const fetchAbsensiRecords = async () => {
     try {
+      // Get the database client
+      const dbClient = getNeonClient();
+      if (!dbClient) {
+        alert('Database tidak tersedia');
+        return;
+      }
+
       // Build the query based on user role and filters
       let query: any[];
       if (userRole === 'admin') {
         // Admin (Guru) can only see student attendance
         if (filterTanggal && filterJenis) {
-          query = await sql`SELECT ar.*, u.namaLengkap, u.nomorInduk, u.role
+          query = await dbClient`SELECT ar.*, u.namaLengkap, u.nomorInduk, u.role
                             FROM attendance_records ar
                             JOIN users u ON ar.userId = u.id
                             WHERE u.role = 'user' AND ar.jenisAbsensi = ${filterJenis} AND ar.tanggal::date = ${filterTanggal}::date
                             ORDER BY ar.tanggal DESC`;
         } else if (filterTanggal) {
-          query = await sql`SELECT ar.*, u.namaLengkap, u.nomorInduk, u.role
+          query = await dbClient`SELECT ar.*, u.namaLengkap, u.nomorInduk, u.role
                             FROM attendance_records ar
                             JOIN users u ON ar.userId = u.id
                             WHERE u.role = 'user' AND ar.tanggal::date = ${filterTanggal}::date
                             ORDER BY ar.tanggal DESC`;
         } else if (filterJenis) {
-          query = await sql`SELECT ar.*, u.namaLengkap, u.nomorInduk, u.role
+          query = await dbClient`SELECT ar.*, u.namaLengkap, u.nomorInduk, u.role
                             FROM attendance_records ar
                             JOIN users u ON ar.userId = u.id
                             WHERE u.role = 'user' AND ar.jenisAbsensi = ${filterJenis}
                             ORDER BY ar.tanggal DESC`;
         } else {
-          query = await sql`SELECT ar.*, u.namaLengkap, u.nomorInduk, u.role
+          query = await dbClient`SELECT ar.*, u.namaLengkap, u.nomorInduk, u.role
                             FROM attendance_records ar
                             JOIN users u ON ar.userId = u.id
                             WHERE u.role = 'user'
@@ -65,25 +73,25 @@ export default function RiwayatAbsensiPage() {
       } else if (userRole === 'superadmin') {
         // Superadmin can see all attendance (teacher and student)
         if (filterTanggal && filterJenis) {
-          query = await sql`SELECT ar.*, u.namaLengkap, u.nomorInduk, u.role
+          query = await dbClient`SELECT ar.*, u.namaLengkap, u.nomorInduk, u.role
                             FROM attendance_records ar
                             JOIN users u ON ar.userId = u.id
                             WHERE ar.jenisAbsensi = ${filterJenis} AND ar.tanggal::date = ${filterTanggal}::date
                             ORDER BY ar.tanggal DESC`;
         } else if (filterTanggal) {
-          query = await sql`SELECT ar.*, u.namaLengkap, u.nomorInduk, u.role
+          query = await dbClient`SELECT ar.*, u.namaLengkap, u.nomorInduk, u.role
                             FROM attendance_records ar
                             JOIN users u ON ar.userId = u.id
                             WHERE ar.tanggal::date = ${filterTanggal}::date
                             ORDER BY ar.tanggal DESC`;
         } else if (filterJenis) {
-          query = await sql`SELECT ar.*, u.namaLengkap, u.nomorInduk, u.role
+          query = await dbClient`SELECT ar.*, u.namaLengkap, u.nomorInduk, u.role
                             FROM attendance_records ar
                             JOIN users u ON ar.userId = u.id
                             WHERE ar.jenisAbsensi = ${filterJenis}
                             ORDER BY ar.tanggal DESC`;
         } else {
-          query = await sql`SELECT ar.*, u.namaLengkap, u.nomorInduk, u.role
+          query = await dbClient`SELECT ar.*, u.namaLengkap, u.nomorInduk, u.role
                             FROM attendance_records ar
                             JOIN users u ON ar.userId = u.id
                             ORDER BY ar.tanggal DESC`;

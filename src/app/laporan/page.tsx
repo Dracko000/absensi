@@ -6,7 +6,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import Header from '@/components/Header';
 import Sidebar from '@/components/Sidebar';
 import { exportToExcel, formatAttendanceForExport } from '@/lib/excelUtils';
-import sql from '@/lib/neonClient';
+import getNeonClient from '@/lib/neonClient';
+const sql = getNeonClient();
 
 // Define AttendanceType as both type and constant for runtime usage
 type AttendanceType = 'guru' | 'murid';
@@ -36,19 +37,26 @@ export default function LaporanPage() {
 
   const fetchAbsensiRecords = async () => {
     try {
+      // Get the database client
+      const dbClient = getNeonClient();
+      if (!dbClient) {
+        alert('Database tidak tersedia');
+        return;
+      }
+
       // Build the query based on filters
       let query;
 
       if (filterTanggal) {
         // Filter by specific date
         if (filterJenis === 'all') {
-          query = await sql`SELECT ar.*, u.namaLengkap, u.nomorInduk, u.role
+          query = await dbClient`SELECT ar.*, u.namaLengkap, u.nomorInduk, u.role
                             FROM attendance_records ar
                             JOIN users u ON ar.userId = u.id
                             WHERE ar.tanggal::date = ${filterTanggal}::date
                             ORDER BY ar.tanggal DESC`;
         } else {
-          query = await sql`SELECT ar.*, u.namaLengkap, u.nomorInduk, u.role
+          query = await dbClient`SELECT ar.*, u.namaLengkap, u.nomorInduk, u.role
                             FROM attendance_records ar
                             JOIN users u ON ar.userId = u.id
                             WHERE ar.jenisAbsensi = ${filterJenis} AND ar.tanggal::date = ${filterTanggal}::date
@@ -58,13 +66,13 @@ export default function LaporanPage() {
         // Filter by month and year
         const dateFilter = `${filterTahun}-${filterBulan}`;
         if (filterJenis === 'all') {
-          query = await sql`SELECT ar.*, u.namaLengkap, u.nomorInduk, u.role
+          query = await dbClient`SELECT ar.*, u.namaLengkap, u.nomorInduk, u.role
                             FROM attendance_records ar
                             JOIN users u ON ar.userId = u.id
                             WHERE ar.tanggal::text LIKE ${dateFilter + '%'}
                             ORDER BY ar.tanggal DESC`;
         } else {
-          query = await sql`SELECT ar.*, u.namaLengkap, u.nomorInduk, u.role
+          query = await dbClient`SELECT ar.*, u.namaLengkap, u.nomorInduk, u.role
                             FROM attendance_records ar
                             JOIN users u ON ar.userId = u.id
                             WHERE ar.jenisAbsensi = ${filterJenis} AND ar.tanggal::text LIKE ${dateFilter + '%'}
@@ -73,12 +81,12 @@ export default function LaporanPage() {
       } else {
         // No specific date filter - get all records
         if (filterJenis === 'all') {
-          query = await sql`SELECT ar.*, u.namaLengkap, u.nomorInduk, u.role
+          query = await dbClient`SELECT ar.*, u.namaLengkap, u.nomorInduk, u.role
                             FROM attendance_records ar
                             JOIN users u ON ar.userId = u.id
                             ORDER BY ar.tanggal DESC`;
         } else {
-          query = await sql`SELECT ar.*, u.namaLengkap, u.nomorInduk, u.role
+          query = await dbClient`SELECT ar.*, u.namaLengkap, u.nomorInduk, u.role
                             FROM attendance_records ar
                             JOIN users u ON ar.userId = u.id
                             WHERE ar.jenisAbsensi = ${filterJenis}
