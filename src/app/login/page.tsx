@@ -10,7 +10,7 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  
+
   const router = useRouter();
   const { signIn } = useAuth();
 
@@ -88,6 +88,11 @@ export default function LoginPage() {
             <div className="text-sm">
               <Link href="/" className="font-medium text-indigo-600 hover:text-indigo-500">
                 Kembali ke Beranda
+              </Link>
+            </div>
+            <div className="text-sm">
+              <Link href="/signup" className="font-medium text-indigo-600 hover:text-indigo-500">
+                Buat akun baru
               </Link>
             </div>
           </div>

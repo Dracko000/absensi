@@ -11,7 +11,7 @@ export default function HomePage() {
           <p className="text-lg text-gray-600 mb-10 max-w-2xl mx-auto">
             Aplikasi absensi berbasis web yang dirancang khusus untuk memudahkan manajemen kehadiran guru dan murid di lingkungan sekolah.
           </p>
-          
+
           <div className="bg-white rounded-xl shadow-lg p-8 mb-10">
             <h2 className="text-2xl font-semibold text-gray-800 mb-4">Fitur Utama</h2>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -29,16 +29,22 @@ export default function HomePage() {
               </div>
             </div>
           </div>
-          
+
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link 
-              href="/login" 
+            <Link
+              href="/login"
               className="px-6 py-3 bg-indigo-600 text-white font-medium rounded-lg hover:bg-indigo-700 transition-colors"
             >
               Masuk ke Sistem
             </Link>
-            <Link 
-              href="/about" 
+            <Link
+              href="/signup"
+              className="px-6 py-3 bg-green-600 text-white font-medium rounded-lg hover:bg-green-700 transition-colors"
+            >
+              Daftar Akun Baru
+            </Link>
+            <Link
+              href="/about"
               className="px-6 py-3 bg-white text-indigo-600 border border-indigo-600 font-medium rounded-lg hover:bg-indigo-50 transition-colors"
             >
               Pelajari Lebih Lanjut
@@ -46,7 +52,7 @@ export default function HomePage() {
           </div>
         </div>
       </div>
-      
+
       <footer className="py-6 text-center text-gray-500 text-sm">
         <p>© {new Date().getFullYear()} Sistem Absensi Sekolah. Hak Cipta Dilindungi.</p>
       </footer>
