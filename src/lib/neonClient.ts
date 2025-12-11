@@ -2,11 +2,6 @@ import { neon } from '@neondatabase/serverless';
 
 // Function that returns a configured Neon client when called
 const createNeonClient = () => {
-  // Skip during build time or if no window (SSR)
-  if (typeof window !== 'undefined') {
-    return null;
-  }
-
   // Use DATABASE_URL or fallback to POSTGRES_URL (for Neon deployments)
   const connectionString = process.env.DATABASE_URL || process.env.POSTGRES_URL;
 
