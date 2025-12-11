@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabaseClient';
+import { createUser } from '@/lib/prismaDataAccess';
 import Link from 'next/link';
 
 export default function SignupPage() {
@@ -13,7 +14,7 @@ export default function SignupPage() {
   const [userRole, setUserRole] = useState<'admin' | 'user'>('user'); // Only allow admin or user signup
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  
+
   const router = useRouter();
 
   const handleSignup = async (e: React.FormEvent) => {
@@ -33,22 +34,15 @@ export default function SignupPage() {
       }
 
       if (authData.user) {
-        // Insert user data into our custom users table
-        const { error: userError } = await supabase
-          .from('users')
-          .insert([{
-            id: authData.user.id,
-            email,
-            nama_lengkap: namaLengkap,
-            nomor_induk: nomorInduk,
-            role: userRole
-          }]);
-
-        if (userError) {
-          // If user table creation failed, delete the auth user
-          await supabase.auth.admin.deleteUser(authData.user.id);
-          throw userError;
-        }
+        // Insert user data into our custom users table using Prisma
+        await createUser({
+          id: authData.user.id,
+          email,
+          passwordHash: '', // Password is handled by Supabase
+          namaLengkap,
+          nomorInduk,
+          role: userRole
+        });
 
         // Send email confirmation
         if (authData.session) {
@@ -60,6 +54,16 @@ export default function SignupPage() {
         }
       }
     } catch (err: any) {
+      // If user table creation failed, delete the auth user
+      if (err && err.message.includes('duplicate key value')) {
+        // Clean up: delete the auth user if database insertion failed
+        try {
+          await supabase.auth.admin.deleteUser(authData.user?.id || '');
+        } catch (deleteErr) {
+          console.error('Failed to clean up user:', deleteErr);
+        }
+      }
+
       setError(err.message || 'Gagal membuat akun. Silakan coba lagi.');
     } finally {
       setLoading(false);
@@ -83,7 +87,7 @@ export default function SignupPage() {
               <div className="text-sm text-red-700">{error}</div>
             </div>
           )}
-          
+
           <div className="rounded-md shadow-sm -space-y-px">
             <div>
               <label htmlFor="nama-lengkap" className="sr-only">

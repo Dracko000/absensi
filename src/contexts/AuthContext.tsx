@@ -2,11 +2,12 @@
 
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { supabase } from '@/lib/supabaseClient';
+import { getUserById } from '@/lib/prismaDataAccess';
 import { UserRole, getCurrentUser, getUserRole } from '@/lib/authUtils';
 
 interface AuthContextType {
   user: any;
-  userDetails: { id: string; email: string; nama_lengkap: string; nomor_induk: string; role: UserRole } | null;
+  userDetails: { id: string; email: string; namaLengkap: string; nomorInduk: string; role: UserRole } | null;
   userRole: UserRole | null;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<any>;
@@ -29,7 +30,7 @@ interface AuthProviderProps {
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<any>(null);
-  const [userDetails, setUserDetails] = useState<{ id: string; email: string; nama_lengkap: string; nomor_induk: string; role: UserRole } | null>(null);
+  const [userDetails, setUserDetails] = useState<{ id: string; email: string; namaLengkap: string; nomorInduk: string; role: UserRole } | null>(null);
   const [userRole, setUserRole] = useState<UserRole | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -48,7 +49,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const signOut = async () => {
     const { error } = await supabase.auth.signOut();
-    
+
     if (error) {
       throw new Error(error.message);
     }
@@ -61,20 +62,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const currentUser = await getCurrentUser();
       if (currentUser) {
         setUser(currentUser);
-        
-        // Get user details from our users table
-        const { data: userData, error } = await supabase
-          .from('users')
-          .select('id, email, nama_lengkap, nomor_induk, role')
-          .eq('id', currentUser.id)
-          .single();
-          
+
+        // Get user details from our users table using Prisma
+        const userData = await getUserById(currentUser.id);
         if (userData) {
           setUserDetails({
             id: userData.id,
             email: userData.email,
-            nama_lengkap: userData.nama_lengkap,
-            nomor_induk: userData.nomor_induk,
+            namaLengkap: userData.namaLengkap,
+            nomorInduk: userData.nomorInduk,
             role: userData.role as UserRole
           });
           setUserRole(userData.role as UserRole);
@@ -89,27 +85,22 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       if (session?.user) {
         setUser(session.user);
-        
-        // Get user details from our users table
+
+        // Get user details from our users table using Prisma
         const fetchUserDetails = async () => {
-          const { data: userData, error } = await supabase
-            .from('users')
-            .select('id, email, nama_lengkap, nomor_induk, role')
-            .eq('id', session.user.id)
-            .single();
-            
+          const userData = await getUserById(session.user.id);
           if (userData) {
             setUserDetails({
               id: userData.id,
               email: userData.email,
-              nama_lengkap: userData.nama_lengkap,
-              nomor_induk: userData.nomor_induk,
+              namaLengkap: userData.namaLengkap,
+              nomorInduk: userData.nomorInduk,
               role: userData.role as UserRole
             });
             setUserRole(userData.role as UserRole);
           }
         };
-        
+
         fetchUserDetails();
       } else {
         setUser(null);

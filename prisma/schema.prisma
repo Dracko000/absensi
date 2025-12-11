@@ -1,0 +1,51 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../node_modules/.prisma/client"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum UserRole {
+  superadmin
+  admin
+  user
+}
+
+enum AttendanceType {
+  guru
+  murid
+}
+
+model User {
+  id           String            @id @default(uuid())
+  email        String            @unique
+  password     String            // Store hashed password
+  namaLengkap  String
+  nomorInduk   String            @unique
+  role         UserRole
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+  attendances  AttendanceRecord[]
+
+  @@map("users")
+}
+
+model AttendanceRecord {
+  id            String       @id @default(uuid())
+  userId        String
+  user          User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tanggal       DateTime
+  jamMasuk      DateTime?
+  jamKeluar     DateTime?
+  jenisAbsensi  AttendanceType
+  barcode       String?
+  keterangan    String?
+  createdAt     DateTime     @default(now())
+
+  @@map("attendance_records")
+}

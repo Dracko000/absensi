@@ -4,10 +4,10 @@
   "description": "Aplikasi absensi berbasis web untuk sekolah dengan tiga tingkat pengguna: Kepala Sekolah (Superadmin), Guru (Admin), dan Murid (User). Sistem ini menggunakan barcode untuk proses absensi dan menyediakan laporan yang dapat diekspor ke Excel.",
   "main": "index.js",
   "scripts": {
-    "dev": "HOST=127.0.0.1 next dev",
-    "dev-all": "HOST=0.0.0.0 next dev",
+    "dev": "next dev",
+    "dev-all": "next dev --hostname 0.0.0.0",
     "build": "next build",
-    "start": "HOST=127.0.0.1 next start",
+    "start": "next start",
     "lint": "next lint",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -16,31 +16,40 @@
     "school",
     "absensi",
     "barcode",
-    "supabase",
-    "nextjs"
+    "nextjs",
+    "postgresql",
+    "prisma"
   ],
   "author": "Sistem Absensi Sekolah",
   "license": "MIT",
   "dependencies": {
     "@headlessui/react": "^2.2.9",
     "@heroicons/react": "^2.2.0",
-    "@supabase/ssr": "^0.8.0",
-    "@supabase/supabase-js": "^2.87.1",
+    "@prisma/client": "^7.1.0",
     "@zxing/library": "^0.21.3",
+    "bcryptjs": "^2.4.3",
+    "express": "^4.21.2",
     "jsbarcode": "^3.12.1",
+    "jsonwebtoken": "^9.0.2",
     "next": "16.0.8",
+    "pg": "^8.13.1",
     "react": "19.2.1",
     "react-dom": "19.2.1",
     "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
+    "@types/bcryptjs": "^2.4.6",
+    "@types/express": "^5.0.0",
+    "@types/jsonwebtoken": "^9.0.7",
     "@types/node": "^20",
+    "@types/pg": "^8.11.10",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@types/xlsx": "^0.0.36",
     "eslint": "^9",
     "eslint-config-next": "16.0.8",
+    "prisma": "^7.1.0",
     "tailwindcss": "^4",
     "typescript": "^5"
   }

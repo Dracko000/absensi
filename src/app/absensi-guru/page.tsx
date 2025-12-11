@@ -7,7 +7,8 @@ import Header from '@/components/Header';
 import Sidebar from '@/components/Sidebar';
 import BarcodeScanner from '@/components/BarcodeScanner';
 import BarcodeGenerator from '@/components/BarcodeGenerator';
-import { supabase } from '@/lib/supabaseClient';
+import { getUserByNomorInduk, getAttendanceByUserId, createAttendanceRecord } from '@/lib/prismaDataAccess';
+import { AttendanceType } from '@prisma/client';
 
 export default function AbsensiGuruPage() {
   const router = useRouter();
@@ -34,19 +35,13 @@ export default function AbsensiGuruPage() {
 
   const fetchUserByBarcode = async (barcode: string) => {
     try {
-      const { data, error } = await supabase
-        .from('users')
-        .select('*')
-        .eq('nomor_induk', barcode)
-        .single();
-
-      if (error) {
-        console.error('Error fetching user:', error);
+      const user = await getUserByNomorInduk(barcode);
+      if (!user) {
         alert('Pengguna tidak ditemukan dengan barcode tersebut');
         return;
       }
 
-      setSelectedUser(data);
+      setSelectedUser(user);
     } catch (error) {
       console.error('Error fetching user:', error);
       alert('Terjadi kesalahan saat mencari pengguna');
@@ -65,13 +60,12 @@ export default function AbsensiGuruPage() {
 
     try {
       // Check if attendance already exists for this user and date
-      const { data: existingRecord } = await supabase
-        .from('attendance_records')
-        .select('*')
-        .eq('user_id', selectedUser.id)
-        .eq('tanggal', tanggal)
-        .eq('jenis_absensi', 'guru')
-        .single();
+      const date = new Date(tanggal);
+      const attendanceRecords = await getAttendanceByUserId(selectedUser.id);
+      const existingRecord = attendanceRecords.find(record =>
+        new Date(record.tanggal).toDateString() === date.toDateString() &&
+        record.jenisAbsensi === 'guru'
+      );
 
       if (existingRecord) {
         alert('Kehadiran untuk tanggal ini sudah dicatat');
@@ -79,20 +73,14 @@ export default function AbsensiGuruPage() {
       }
 
       // Insert attendance record
-      const { data, error } = await supabase
-        .from('attendance_records')
-        .insert([{
-          user_id: selectedUser.id,
-          tanggal: tanggal,
-          jam_masuk: new Date().toTimeString().split(' ')[0].substring(0, 5), // Get current time in HH:MM format
-          jenis_absensi: 'guru',
-          barcode: scannedBarcode || selectedUser.nomor_induk,
-          keterangan: keterangan
-        }]);
-
-      if (error) {
-        throw error;
-      }
+      await createAttendanceRecord({
+        userId: selectedUser.id,
+        tanggal: date,
+        jamMasuk: new Date(), // Current date and time
+        jenisAbsensi: AttendanceType.guru,
+        barcode: scannedBarcode || selectedUser.nomorInduk,
+        keterangan: keterangan
+      });
 
       alert('Absensi berhasil disimpan');
       setScannedBarcode(null);
@@ -122,7 +110,7 @@ export default function AbsensiGuruPage() {
       <main className="md:ml-64 p-6">
         <div className="max-w-7xl mx-auto">
           <h1 className="text-2xl font-bold text-gray-800 mb-6">Absensi Guru</h1>
-          
+
           <div className="bg-white p-6 rounded-lg shadow mb-6">
             <div className="flex border-b mb-4">
               <button
@@ -138,18 +126,18 @@ export default function AbsensiGuruPage() {
                 Input Manual
               </button>
             </div>
-            
+
             {activeTab === 'scan' ? (
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 <div>
                   <h2 className="text-lg font-semibold text-gray-700 mb-4">Pemindai Barcode</h2>
                   <div className="mb-6">
-                    <BarcodeScanner 
-                      onScan={handleScan} 
+                    <BarcodeScanner
+                      onScan={handleScan}
                       onError={(err) => console.error('Barcode scanning error:', err)}
                     />
                   </div>
-                  
+
                   {scannedBarcode && (
                     <div className="mt-4 p-4 border border-gray-200 rounded-lg bg-gray-50">
                       <p className="font-medium">Barcode Terdeteksi:</p>
@@ -157,19 +145,19 @@ export default function AbsensiGuruPage() {
                     </div>
                   )}
                 </div>
-                
+
                 <div>
                   <h2 className="text-lg font-semibold text-gray-700 mb-4">Detail Guru</h2>
-                  
+
                   {selectedUser ? (
                     <div className="mb-6">
                       <div className="p-4 border border-gray-200 rounded-lg">
-                        <p className="text-lg font-medium">{selectedUser.nama_lengkap}</p>
-                        <p className="text-gray-600">Nomor Induk: {selectedUser.nomor_induk}</p>
+                        <p className="text-lg font-medium">{selectedUser.namaLengkap}</p>
+                        <p className="text-gray-600">Nomor Induk: {selectedUser.nomorInduk}</p>
                         <p className="text-gray-600">Email: {selectedUser.email}</p>
                         <p className="text-gray-600">Jabatan: Guru</p>
                       </div>
-                      
+
                       <div className="mt-4">
                         <label className="block text-sm font-medium text-gray-700 mb-1">Tanggal</label>
                         <input
@@ -179,7 +167,7 @@ export default function AbsensiGuruPage() {
                           className="w-full p-2 border border-gray-300 rounded-md"
                         />
                       </div>
-                      
+
                       <div className="mt-4">
                         <label className="block text-sm font-medium text-gray-700 mb-1">Keterangan</label>
                         <input
@@ -190,7 +178,7 @@ export default function AbsensiGuruPage() {
                           className="w-full p-2 border border-gray-300 rounded-md"
                         />
                       </div>
-                      
+
                       <button
                         onClick={handleSaveAttendance}
                         className="mt-4 w-full py-2 px-4 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors"
@@ -220,7 +208,7 @@ export default function AbsensiGuruPage() {
                         className="w-full p-2 border border-gray-300 rounded-md"
                       />
                     </div>
-                    
+
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">Tanggal</label>
                       <input
@@ -230,7 +218,7 @@ export default function AbsensiGuruPage() {
                         className="w-full p-2 border border-gray-300 rounded-md"
                       />
                     </div>
-                    
+
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">Keterangan</label>
                       <input
@@ -241,7 +229,7 @@ export default function AbsensiGuruPage() {
                         className="w-full p-2 border border-gray-300 rounded-md"
                       />
                     </div>
-                    
+
                     <button
                       onClick={() => scannedBarcode && fetchUserByBarcode(scannedBarcode)}
                       className="w-full py-2 px-4 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors"
@@ -250,19 +238,19 @@ export default function AbsensiGuruPage() {
                     </button>
                   </div>
                 </div>
-                
+
                 <div>
                   <h2 className="text-lg font-semibold text-gray-700 mb-4">Detail Guru</h2>
-                  
+
                   {selectedUser ? (
                     <div className="mb-6">
                       <div className="p-4 border border-gray-200 rounded-lg">
-                        <p className="text-lg font-medium">{selectedUser.nama_lengkap}</p>
-                        <p className="text-gray-600">Nomor Induk: {selectedUser.nomor_induk}</p>
+                        <p className="text-lg font-medium">{selectedUser.namaLengkap}</p>
+                        <p className="text-gray-600">Nomor Induk: {selectedUser.nomorInduk}</p>
                         <p className="text-gray-600">Email: {selectedUser.email}</p>
                         <p className="text-gray-600">Jabatan: Guru</p>
                       </div>
-                      
+
                       <button
                         onClick={handleSaveAttendance}
                         className="mt-4 w-full py-2 px-4 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors"
@@ -279,20 +267,20 @@ export default function AbsensiGuruPage() {
               </div>
             )}
           </div>
-          
+
           <div className="bg-white p-6 rounded-lg shadow">
             <h2 className="text-xl font-semibold text-gray-800 mb-4">Barcode Identitas Guru</h2>
             <p className="text-gray-600 mb-4">Barcode untuk identifikasi guru (gunakan nomor induk guru sebagai barcode)</p>
-            
+
             <div className="flex flex-wrap gap-6">
               <div className="flex-1 min-w-[300px]">
                 <h3 className="font-medium text-gray-700 mb-2">Contoh Barcode</h3>
-                <BarcodeGenerator value={userDetails?.nomor_induk || 'GR001'} />
+                <BarcodeGenerator value={userDetails?.nomorInduk || 'GR001'} />
               </div>
             </div>
-            
+
             <div className="mt-4">
-              <button 
+              <button
                 onClick={() => alert('Fitur cetak barcode akan segera tersedia')}
                 className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors"
               >

@@ -20,6 +20,8 @@ const nextConfig: NextConfig = {
       },
     ];
   },
+  // Handle the HOST issue in containerized environments
+  output: 'standalone',
 };
 
 export default nextConfig;
