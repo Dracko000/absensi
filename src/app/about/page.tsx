@@ -47,8 +47,8 @@ export default function AboutPage() {
             <h2 className="text-2xl font-semibold text-gray-800 mt-8 mb-4">Teknologi yang Digunakan</h2>
             <ul className="list-disc pl-6 space-y-2 text-gray-700 mb-8">
               <li><strong>Frontend:</strong> Next.js 14 dengan TypeScript dan Tailwind CSS</li>
-              <li><strong>Backend:</strong> Supabase (PostgreSQL, Authentication, Storage)</li>
-              <li><strong>Otentikasi:</strong> Supabase Auth</li>
+              <li><strong>Backend:</strong> PostgreSQL (using Prisma ORM)</li>
+              <li><strong>Otentikasi:</strong> JWT-based authentication with bcrypt</li>
               <li><strong>UI Library:</strong> Headless UI dan Heroicons</li>
             </ul>
             

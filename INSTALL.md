@@ -30,24 +30,28 @@ npm install
 ### 3. Konfigurasi Lingkungan
 
 1. Buat file `.env.local` di direktori root proyek
-2. Tambahkan konfigurasi Supabase:
+2. Tambahkan konfigurasi database PostgreSQL:
 
 ```env
-NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+DATABASE_URL=postgresql://username:password@localhost:5432/attendance_db
+JWT_SECRET=your_jwt_secret_key
 ```
 
-Ganti `your-project.supabase.co` dengan URL proyek Supabase Anda dan `your-anon-key` dengan anon key dari dashboard Supabase.
+Ganti dengan informasi koneksi database PostgreSQL Anda dan buat kunci JWT yang kuat.
 
 ### 4. Konfigurasi Database
 
-1. Buat akun di [Supabase](https://supabase.com)
-2. Buat proyek baru di dashboard Supabase
-3. Di editor SQL Supabase (SQL Editor di dashboard), jalankan skrip migrasi dari file berikut secara berurutan:
-   - `database/migrations/01_create_tables.sql`
-   - `database/migrations/02_create_policies.sql`
+1. Pastikan Anda memiliki PostgreSQL yang berjalan di sistem Anda
+2. Buat database baru untuk aplikasi ini
+3. Jalankan migrasi Prisma untuk membuat tabel-tabel yang diperlukan:
 
-Pastikan semua skrip berhasil dijalankan tanpa error.
+```bash
+npx prisma migrate dev
+```
+
+Atau jika Anda ingin menjalankan migrasi secara manual, Anda bisa menggunakan file SQL yang tersedia di direktori `database/migrations/`
+
+Pastikan semua migrasi berhasil dijalankan tanpa error.
 
 ### 5. Jalankan Aplikasi
 

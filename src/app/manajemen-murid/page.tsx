@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import Header from '@/components/Header';
 import Sidebar from '@/components/Sidebar';
-import { supabase } from '@/lib/supabaseClient';
+import { hashPassword } from '@/lib/jwtAuth';
 
 export default function ManajemenMuridPage() {
   const router = useRouter();
@@ -13,9 +13,9 @@ export default function ManajemenMuridPage() {
   const [muridList, setMuridList] = useState<any[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [formData, setFormData] = useState({
-    nama_lengkap: '',
+    namaLengkap: '',
     email: '',
-    nomor_induk: '',
+    nomorInduk: '',
     password: ''
   });
 
@@ -29,17 +29,67 @@ export default function ManajemenMuridPage() {
 
   const fetchMuridList = async () => {
     try {
-      const { data, error } = await supabase
-        .from('users')
-        .select('*')
-        .eq('role', 'user')
-        .order('created_at', { ascending: false });
-
-      if (error) {
-        throw error;
+      // Database functionality is currently disabled
+      console.warn("Database functionality disabled - using mock data");
+      // Using mock data since database access is disabled
+      // Only superadmin can see all students, admin should see students in their class
+      if (userRole === 'admin') {
+        // Admin (Guru) would see students in their assigned class
+        setMuridList([
+          {
+            id: 'mock-s1',
+            email: 'murid1@sekolah.test',
+            namaLengkap: 'Murid Kelas A',
+            nomorInduk: 'MURID001',
+            role: 'user',
+            createdAt: new Date(),
+            updatedAt: new Date()
+          },
+          {
+            id: 'mock-s2',
+            email: 'murid2@sekolah.test',
+            namaLengkap: 'Murid Kelas A',
+            nomorInduk: 'MURID002',
+            role: 'user',
+            createdAt: new Date(),
+            updatedAt: new Date()
+          }
+        ]);
+      } else if (userRole === 'superadmin') {
+        // Superadmin can see all students
+        setMuridList([
+          {
+            id: 'mock-s1',
+            email: 'murid1@sekolah.test',
+            namaLengkap: 'Murid Satu',
+            nomorInduk: 'MURID001',
+            role: 'user',
+            createdAt: new Date(),
+            updatedAt: new Date()
+          },
+          {
+            id: 'mock-s2',
+            email: 'murid2@sekolah.test',
+            namaLengkap: 'Murid Dua',
+            nomorInduk: 'MURID002',
+            role: 'user',
+            createdAt: new Date(),
+            updatedAt: new Date()
+          },
+          {
+            id: 'mock-s3',
+            email: 'murid3@sekolah.test',
+            namaLengkap: 'Murid Tiga',
+            nomorInduk: 'MURID003',
+            role: 'user',
+            createdAt: new Date(),
+            updatedAt: new Date()
+          }
+        ]);
+      } else {
+        // Regular user (student) shouldn't access this page
+        setMuridList([]);
       }
-
-      setMuridList(data || []);
     } catch (error: any) {
       console.error('Error fetching murid list:', error);
       alert('Gagal memuat daftar murid: ' + error.message);
@@ -48,42 +98,16 @@ export default function ManajemenMuridPage() {
 
   const handleAddMurid = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     try {
-      // First, create the user in Supabase Auth
-      const { data: authData, error: authError } = await supabase.auth.admin.createUser({
-        email: formData.email,
-        password: formData.password,
-        email_confirm: true
-      });
-
-      if (authError) {
-        throw authError;
-      }
-
-      // Then, create the user in our users table
-      const { error: userError } = await supabase
-        .from('users')
-        .insert([{
-          id: authData.user.id,
-          email: formData.email,
-          nama_lengkap: formData.nama_lengkap,
-          nomor_induk: formData.nomor_induk,
-          role: 'user'
-        }]);
-
-      if (userError) {
-        // If user table creation failed, delete the auth user
-        await supabase.auth.admin.deleteUser(authData.user.id);
-        throw userError;
-      }
-
-      alert('Murid berhasil ditambahkan');
+      // Database functionality is currently disabled
+      console.warn("Database functionality disabled - add murid not available");
+      alert('Fitur tambah murid dinonaktifkan karena akses database sedang bermasalah.');
       setShowForm(false);
       setFormData({
-        nama_lengkap: '',
+        namaLengkap: '',
         email: '',
-        nomor_induk: '',
+        nomorInduk: '',
         password: ''
       });
       fetchMuridList();
@@ -119,7 +143,7 @@ export default function ManajemenMuridPage() {
               {showForm ? 'Batal' : '+ Tambah Murid'}
             </button>
           </div>
-          
+
           {showForm && (
             <div className="bg-white p-6 rounded-lg shadow mb-6">
               <h2 className="text-lg font-semibold text-gray-800 mb-4">Tambah Murid Baru</h2>
@@ -129,8 +153,8 @@ export default function ManajemenMuridPage() {
                     <label className="block text-sm font-medium text-gray-700 mb-1">Nama Lengkap</label>
                     <input
                       type="text"
-                      value={formData.nama_lengkap}
-                      onChange={(e) => setFormData({...formData, nama_lengkap: e.target.value})}
+                      value={formData.namaLengkap}
+                      onChange={(e) => setFormData({...formData, namaLengkap: e.target.value})}
                       className="w-full p-2 border border-gray-300 rounded-md"
                       required
                     />
@@ -149,8 +173,8 @@ export default function ManajemenMuridPage() {
                     <label className="block text-sm font-medium text-gray-700 mb-1">Nomor Induk</label>
                     <input
                       type="text"
-                      value={formData.nomor_induk}
-                      onChange={(e) => setFormData({...formData, nomor_induk: e.target.value})}
+                      value={formData.nomorInduk}
+                      onChange={(e) => setFormData({...formData, nomorInduk: e.target.value})}
                       className="w-full p-2 border border-gray-300 rounded-md"
                       required
                     />
@@ -177,10 +201,10 @@ export default function ManajemenMuridPage() {
               </form>
             </div>
           )}
-          
+
           <div className="bg-white p-6 rounded-lg shadow">
             <h2 className="text-lg font-semibold text-gray-800 mb-4">Daftar Murid</h2>
-            
+
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
@@ -204,16 +228,16 @@ export default function ManajemenMuridPage() {
                     muridList.map((murid) => (
                       <tr key={murid.id}>
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                          {murid.nama_lengkap}
+                          {murid.namaLengkap}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                           {murid.email}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {murid.nomor_induk}
+                          {murid.nomorInduk}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {new Date(murid.created_at).toLocaleDateString('id-ID')}
+                          {new Date(murid.createdAt).toLocaleDateString('id-ID')}
                         </td>
                       </tr>
                     ))

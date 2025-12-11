@@ -7,7 +7,6 @@ import Header from '@/components/Header';
 import Sidebar from '@/components/Sidebar';
 import BarcodeScanner from '@/components/BarcodeScanner';
 import BarcodeGenerator from '@/components/BarcodeGenerator';
-import { getUserByNomorInduk, getAttendanceByUserId, createAttendanceRecord } from '@/lib/prismaDataAccess';
 import { AttendanceType } from '@prisma/client';
 
 export default function AbsensiMuridPage() {
@@ -35,7 +34,20 @@ export default function AbsensiMuridPage() {
 
   const fetchUserByBarcode = async (barcode: string) => {
     try {
-      const user = await getUserByNomorInduk(barcode);
+      // Database functionality is currently disabled
+      console.warn("Database functionality disabled - using mock data");
+      // Using mock data since database access is disabled
+      const user = {
+        id: `mock-user-${barcode}`,
+        email: `murid-${barcode}@sekolah.test`,
+        password: '',
+        namaLengkap: `Murid ${barcode}`,
+        nomorInduk: barcode,
+        role: 'user',
+        createdAt: new Date(),
+        updatedAt: new Date()
+      };
+
       if (!user) {
         alert('Murid tidak ditemukan dengan barcode tersebut');
         return;
@@ -64,21 +76,23 @@ export default function AbsensiMuridPage() {
     }
 
     try {
-      // Check if attendance already exists for this user and date
+      // Database functionality is currently disabled
+      console.warn("Database functionality disabled - attendance not saved to database");
+      // Check if attendance already exists for this user and date (mock check)
+      // Using mock data since database access is disabled
       const date = new Date(tanggal);
-      const attendanceRecords = await getAttendanceByUserId(selectedUser.id);
-      const existingRecord = attendanceRecords.find(record =>
-        new Date(record.tanggal).toDateString() === date.toDateString() &&
-        record.jenisAbsensi === 'murid'
-      );
+
+      // Mock check for existing record
+      // In a real implementation, this would query the database
+      const existingRecord = false; // Always assume no existing record for mock
 
       if (existingRecord) {
         alert('Kehadiran untuk tanggal ini sudah dicatat');
         return;
       }
 
-      // Insert attendance record
-      await createAttendanceRecord({
+      // Mock attendance record creation
+      console.log('Attendance record would be created with:', {
         userId: selectedUser.id,
         tanggal: date,
         jamMasuk: new Date(), // Current date and time
@@ -87,7 +101,7 @@ export default function AbsensiMuridPage() {
         keterangan: keterangan
       });
 
-      alert('Absensi murid berhasil disimpan');
+      alert('Absensi murid berhasil disimpan (data tidak disimpan ke database)');
       setScannedBarcode(null);
       setSelectedUser(null);
       setKeterangan('');

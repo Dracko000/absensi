@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import Header from '@/components/Header';
 import Sidebar from '@/components/Sidebar';
-import { supabase } from '@/lib/supabaseClient';
+import { AttendanceType } from '@prisma/client';
 
 export default function RiwayatKehadiranPage() {
   const router = useRouter();
@@ -23,26 +23,82 @@ export default function RiwayatKehadiranPage() {
 
   const fetchAbsensiRecords = async () => {
     if (!userDetails?.id) return;
-    
+
     try {
-      let query = supabase
-        .from('attendance_records')
-        .select('*')
-        .eq('user_id', userDetails.id)
-        .eq('jenis_absensi', 'murid')
-        .order('tanggal', { ascending: false });
-
-      if (filterTanggal) {
-        query = query.eq('tanggal', filterTanggal);
+      // Database functionality is currently disabled
+      console.warn("Database functionality disabled - using mock data");
+      // Using mock data since database access is disabled
+      // Only user (student) should see their own attendance records
+      if (userDetails.role === 'user') {
+        setAbsensiRecords([
+          {
+            id: 'mock-a1',
+            userId: userDetails.id,
+            tanggal: new Date(Date.now() - 86400000), // Yesterday
+            jamMasuk: new Date(Date.now() - 86400000 + 8 * 3600000), // Yesterday at 8 AM
+            jamKeluar: new Date(Date.now() - 86400000 + 15 * 3600000), // Yesterday at 3 PM
+            jenisAbsensi: 'murid',
+            barcode: 'mock-barcode',
+            keterangan: 'Hadir',
+            createdAt: new Date(),
+            user: {
+              id: userDetails.id,
+              email: userDetails.email,
+              password: '',
+              namaLengkap: userDetails.namaLengkap,
+              nomorInduk: userDetails.nomorInduk,
+              role: userDetails.role,
+              createdAt: new Date(),
+              updatedAt: new Date()
+            }
+          },
+          {
+            id: 'mock-a2',
+            userId: userDetails.id,
+            tanggal: new Date(), // Today
+            jamMasuk: new Date(Date.now() + 8 * 3600000), // Today at 8 AM
+            jamKeluar: null, // No exit time yet
+            jenisAbsensi: 'murid',
+            barcode: 'mock-barcode',
+            keterangan: 'Hadir',
+            createdAt: new Date(),
+            user: {
+              id: userDetails.id,
+              email: userDetails.email,
+              password: '',
+              namaLengkap: userDetails.namaLengkap,
+              nomorInduk: userDetails.nomorInduk,
+              role: userDetails.role,
+              createdAt: new Date(),
+              updatedAt: new Date()
+            }
+          },
+          {
+            id: 'mock-a3',
+            userId: userDetails.id,
+            tanggal: new Date(Date.now() - 86400000 * 2), // 2 days ago
+            jamMasuk: new Date(Date.now() - 86400000 * 2 + 8 * 3600000), // 2 days ago at 8 AM
+            jamKeluar: new Date(Date.now() - 86400000 * 2 + 15 * 3600000), // 2 days ago at 3 PM
+            jenisAbsensi: 'murid',
+            barcode: 'mock-barcode',
+            keterangan: 'Hadir',
+            createdAt: new Date(),
+            user: {
+              id: userDetails.id,
+              email: userDetails.email,
+              password: '',
+              namaLengkap: userDetails.namaLengkap,
+              nomorInduk: userDetails.nomorInduk,
+              role: userDetails.role,
+              createdAt: new Date(),
+              updatedAt: new Date()
+            }
+          }
+        ]);
+      } else {
+        // Admin or superadmin shouldn't be on this page
+        setAbsensiRecords([]);
       }
-
-      const { data, error } = await query;
-
-      if (error) {
-        throw error;
-      }
-
-      setAbsensiRecords(data || []);
     } catch (error: any) {
       console.error('Error fetching attendance records:', error);
       alert('Gagal memuat riwayat kehadiran: ' + error.message);
@@ -67,7 +123,7 @@ export default function RiwayatKehadiranPage() {
       <main className="md:ml-64 p-6">
         <div className="max-w-7xl mx-auto">
           <h1 className="text-2xl font-bold text-gray-800 mb-6">Riwayat Kehadiran Saya</h1>
-          
+
           <div className="bg-white p-6 rounded-lg shadow mb-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
               <div>
@@ -79,7 +135,7 @@ export default function RiwayatKehadiranPage() {
                   className="w-full p-2 border border-gray-300 rounded-md"
                 />
               </div>
-              
+
               <div className="flex items-end">
                 <button
                   onClick={fetchAbsensiRecords}
@@ -89,7 +145,7 @@ export default function RiwayatKehadiranPage() {
                 </button>
               </div>
             </div>
-            
+
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
@@ -116,7 +172,7 @@ export default function RiwayatKehadiranPage() {
                           {new Date(record.tanggal).toLocaleDateString('id-ID')}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {record.jam_masuk || '-'}
+                          {record.jamMasuk ? new Date(record.jamMasuk).toLocaleTimeString('id-ID') : '-'}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
@@ -139,10 +195,10 @@ export default function RiwayatKehadiranPage() {
               </table>
             </div>
           </div>
-          
+
           <div className="bg-white p-6 rounded-lg shadow">
             <h2 className="text-xl font-semibold text-gray-800 mb-4">Statistik Kehadiran</h2>
-            
+
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div className="bg-blue-50 p-4 rounded-lg">
                 <h3 className="font-medium text-blue-700">Total Hadir</h3>
@@ -154,7 +210,7 @@ export default function RiwayatKehadiranPage() {
                   {absensiRecords.filter(r => {
                     const recordDate = new Date(r.tanggal);
                     const now = new Date();
-                    return recordDate.getMonth() === now.getMonth() && 
+                    return recordDate.getMonth() === now.getMonth() &&
                            recordDate.getFullYear() === now.getFullYear();
                   }).length}
                 </p>
@@ -162,8 +218,8 @@ export default function RiwayatKehadiranPage() {
               <div className="bg-purple-50 p-4 rounded-lg">
                 <h3 className="font-medium text-purple-700">Terakhir Hadir</h3>
                 <p className="text-lg font-bold text-purple-700 mt-2">
-                  {absensiRecords.length > 0 
-                    ? new Date(absensiRecords[0].tanggal).toLocaleDateString('id-ID') 
+                  {absensiRecords.length > 0
+                    ? new Date(absensiRecords[0].tanggal).toLocaleDateString('id-ID')
                     : 'Belum pernah hadir'}
                 </p>
               </div>

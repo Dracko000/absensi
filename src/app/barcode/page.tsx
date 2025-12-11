@@ -16,7 +16,7 @@ export default function BarcodePage() {
     if (!loading && userRole !== 'user') {
       router.push('/login');
     } else if (!loading && userDetails) {
-      setBarcodeValue(userDetails.nomor_induk);
+      setBarcodeValue(userDetails.nomorInduk);
     }
   }, [userRole, loading, userDetails]);
 
@@ -46,13 +46,13 @@ export default function BarcodePage() {
           <div className="bg-white p-8 rounded-lg shadow-lg text-center">
             <div className="mb-6">
               <h2 className="text-xl font-semibold text-gray-800 mb-2">Barcode Identitas Murid</h2>
-              <p className="text-gray-600">{userDetails?.nama_lengkap}</p>
-              <p className="text-gray-600">{userDetails?.nomor_induk}</p>
+              <p className="text-gray-600">{userDetails?.namaLengkap}</p>
+              <p className="text-gray-600">{userDetails?.nomorInduk}</p>
             </div>
             
             <div className="bg-white p-4 rounded border border-gray-200 inline-block">
-              <BarcodeGenerator 
-                value={barcodeValue || userDetails?.nomor_induk || 'MR001'} 
+              <BarcodeGenerator
+                value={barcodeValue || userDetails?.nomorInduk || 'MR001'}
                 format="CODE128"
                 height={50}
               />

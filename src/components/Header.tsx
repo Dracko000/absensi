@@ -39,7 +39,7 @@ export default function Header() {
                   <span className="sr-only">Buka menu pengguna</span>
                   <div className="h-8 w-8 rounded-full bg-indigo-100 flex items-center justify-center">
                     <span className="text-indigo-800 font-medium">
-                      {userDetails?.nama_lengkap?.charAt(0) || 'U'}
+                      {userDetails?.namaLengkap?.charAt(0) || 'U'}
                     </span>
                   </div>
                 </Menu.Button>
@@ -55,7 +55,7 @@ export default function Header() {
               >
                 <Menu.Items className="origin-top-right absolute right-0 mt-2 w-48 rounded-md shadow-lg py-1 bg-white ring-1 ring-black ring-opacity-5 focus:outline-none">
                   <div className="px-4 py-2 border-b">
-                    <p className="text-sm font-medium text-gray-900 truncate">{userDetails?.nama_lengkap}</p>
+                    <p className="text-sm font-medium text-gray-900 truncate">{userDetails?.namaLengkap}</p>
                     <p className="text-xs text-gray-500 truncate">{userDetails?.email}</p>
                   </div>
                   <Menu.Item>

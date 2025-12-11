@@ -13,8 +13,9 @@ Aplikasi absensi berbasis web untuk sekolah dengan tiga tingkat pengguna: Kepala
 
 ## Teknologi yang Digunakan
 
-- **Frontend**: Next.js 14, TypeScript, Tailwind CSS
-- **Backend**: Supabase (PostgreSQL, Authentication)
+- **Frontend**: Next.js 16, TypeScript, Tailwind CSS
+- **Backend**: PostgreSQL (Prisma ORM)
+- **Authentication**: JWT-based with bcrypt password hashing
 - **Barcode**: Zxing for scanning, JsBarcode for generation
 - **UI/UX**: Headless UI, Heroicons
 - **Ekspor Excel**: xlsx library

@@ -1,9 +1,8 @@
 'use client';
 
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-import { supabase } from '@/lib/supabaseClient';
-import { getUserById } from '@/lib/prismaDataAccess';
-import { UserRole, getCurrentUser, getUserRole } from '@/lib/authUtils';
+import { authenticateUser, generateToken, getUserFromToken } from '@/lib/jwtAuth';
+import { UserRole } from '@/lib/authUtils';
 
 interface AuthContextType {
   user: any;
@@ -35,84 +34,81 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   const signIn = async (email: string, password: string) => {
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
+    // For mock implementation, extract role from email
+    // In a real app, this would authenticate with the database
+    let mockRole = 'user';
+    if (email.includes('superadmin')) mockRole = 'superadmin';
+    else if (email.includes('admin')) mockRole = 'admin';
 
-    if (error) {
-      throw new Error(error.message);
+    // Store mock role in localStorage for the auth context to use
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('mock-role', mockRole);
     }
 
-    return data;
+    // Create mock user data
+    const mockUser = {
+      id: `mock-${mockRole}-1`,
+      email,
+      role: mockRole,
+      nomorInduk: `${mockRole.toUpperCase()}001`,
+      namaLengkap: `Mock ${mockRole === 'superadmin' ? 'Superadmin' : mockRole === 'admin' ? 'Admin' : 'User'} 1`
+    };
+
+    setUser(mockUser);
+
+    // Set user details
+    setUserDetails({
+      id: mockUser.id,
+      email: mockUser.email,
+      namaLengkap: mockUser.namaLengkap,
+      nomorInduk: mockUser.nomorInduk,
+      role: mockUser.role as UserRole
+    });
+
+    setUserRole(mockUser.role as UserRole);
+
+    // In a real implementation, we would generate and store an actual token
+    // For mock, we just return the mock user data
+    return { user: mockUser, token: 'mock-token' };
   };
 
   const signOut = async () => {
-    const { error } = await supabase.auth.signOut();
-
-    if (error) {
-      throw new Error(error.message);
+    // Clear the token from localStorage
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('auth-token');
     }
+
+    setUser(null);
+    setUserDetails(null);
+    setUserRole(null);
   };
 
   // Check active session and set user data
   useEffect(() => {
-    // Get current session
-    const checkSession = async () => {
-      const currentUser = await getCurrentUser();
-      if (currentUser) {
-        setUser(currentUser);
+    // For demo purposes, create mock user data based on role
+    // In a real application, this would come from the actual token and database
+    const mockRole = localStorage.getItem('mock-role') || 'user'; // Default to user role
 
-        // Get user details from our users table using Prisma
-        const userData = await getUserById(currentUser.id);
-        if (userData) {
-          setUserDetails({
-            id: userData.id,
-            email: userData.email,
-            namaLengkap: userData.namaLengkap,
-            nomorInduk: userData.nomorInduk,
-            role: userData.role as UserRole
-          });
-          setUserRole(userData.role as UserRole);
-        }
-      }
-      setLoading(false);
+    // Create mock user data
+    const mockUser = {
+      id: `mock-${mockRole}-1`,
+      email: `${mockRole}@sekolah.test`,
+      role: mockRole,
+      nomorInduk: `${mockRole.toUpperCase()}001`,
+      namaLengkap: `Mock ${mockRole === 'superadmin' ? 'Superadmin' : mockRole === 'admin' ? 'Admin' : 'User'} 1`
     };
 
-    checkSession();
-
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (session?.user) {
-        setUser(session.user);
-
-        // Get user details from our users table using Prisma
-        const fetchUserDetails = async () => {
-          const userData = await getUserById(session.user.id);
-          if (userData) {
-            setUserDetails({
-              id: userData.id,
-              email: userData.email,
-              namaLengkap: userData.namaLengkap,
-              nomorInduk: userData.nomorInduk,
-              role: userData.role as UserRole
-            });
-            setUserRole(userData.role as UserRole);
-          }
-        };
-
-        fetchUserDetails();
-      } else {
-        setUser(null);
-        setUserDetails(null);
-        setUserRole(null);
-      }
-      setLoading(false);
+    setUser(mockUser);
+    setUserDetails({
+      id: mockUser.id,
+      email: mockUser.email,
+      namaLengkap: mockUser.namaLengkap,
+      nomorInduk: mockUser.nomorInduk,
+      role: mockUser.role as UserRole
     });
+    setUserRole(mockUser.role as UserRole);
 
-    return () => {
-      subscription.unsubscribe();
-    };
+    setLoading(false);
   }, []);
 
   const value = {

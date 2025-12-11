@@ -5,14 +5,14 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import Header from '@/components/Header';
 import Sidebar from '@/components/Sidebar';
-import { supabase } from '@/lib/supabaseClient';
+import { AttendanceType } from '@prisma/client';
 import { exportToExcel, formatAttendanceForExport } from '@/lib/excelUtils';
 
 export default function LaporanPage() {
   const router = useRouter();
   const { userRole, loading } = useAuth();
   const [absensiRecords, setAbsensiRecords] = useState<any[]>([]);
-  const [filterJenis, setFilterJenis] = useState<string>('all');
+  const [filterJenis, setFilterJenis] = useState<AttendanceType | 'all'>('all');
   const [filterTanggal, setFilterTanggal] = useState<string>('');
   const [filterBulan, setFilterBulan] = useState<string>('');
   const [filterTahun, setFilterTahun] = useState<string>(new Date().getFullYear().toString());
@@ -27,34 +27,70 @@ export default function LaporanPage() {
 
   const fetchAbsensiRecords = async () => {
     try {
-      let query = supabase
-        .from('attendance_records')
-        .select(`
-          *,
-          user:users(nama_lengkap, nomor_induk, role)
-        `)
-        .order('tanggal', { ascending: false });
+      // Database functionality is currently disabled
+      console.warn("Database functionality disabled - using mock data");
+      // Using mock data since database access is disabled
+      if (userRole === 'superadmin') {
+        // Superadmin can see all attendance records
+        const mockRecords = [];
 
-      // Apply filters
-      if (filterJenis !== 'all') {
-        query = query.eq('jenis_absensi', filterJenis);
+        // Add student records
+        mockRecords.push({
+          id: 'mock-s1',
+          userId: 'mock-student-1',
+          tanggal: filterTanggal ? new Date(filterTanggal) : new Date(Date.now() - 86400000), // Yesterday or filtered date
+          jamMasuk: filterTanggal ? new Date(`${filterTanggal}T08:00:00`) : new Date(Date.now() - 86400000 + 8 * 3600000),
+          jamKeluar: filterTanggal ? new Date(`${filterTanggal}T15:00:00`) : new Date(Date.now() - 86400000 + 15 * 3600000),
+          jenisAbsensi: filterJenis === 'all' || filterJenis === 'murid' ? 'murid' : (filterJenis as AttendanceType),
+          barcode: 'mock-barcode',
+          keterangan: 'Hadir',
+          createdAt: new Date(),
+          user: {
+            id: 'mock-student-1',
+            email: 'murid1@sekolah.test',
+            password: '',
+            namaLengkap: 'Murid Satu',
+            nomorInduk: 'MURID001',
+            role: 'user',
+            createdAt: new Date(),
+            updatedAt: new Date()
+          }
+        });
+
+        // Add teacher records
+        mockRecords.push({
+          id: 'mock-t1',
+          userId: 'mock-teacher-1',
+          tanggal: filterTanggal ? new Date(filterTanggal) : new Date(Date.now() - 86400000), // Yesterday or filtered date
+          jamMasuk: filterTanggal ? new Date(`${filterTanggal}T07:30:00`) : new Date(Date.now() - 86400000 + 7.5 * 3600000),
+          jamKeluar: filterTanggal ? new Date(`${filterTanggal}T16:00:00`) : new Date(Date.now() - 86400000 + 16 * 3600000),
+          jenisAbsensi: filterJenis === 'all' || filterJenis === 'guru' ? 'guru' : (filterJenis as AttendanceType),
+          barcode: 'mock-barcode',
+          keterangan: 'Hadir',
+          createdAt: new Date(),
+          user: {
+            id: 'mock-teacher-1',
+            email: 'guru1@sekolah.test',
+            password: '',
+            namaLengkap: 'Guru Satu',
+            nomorInduk: 'GURU001',
+            role: 'admin',
+            createdAt: new Date(),
+            updatedAt: new Date()
+          }
+        });
+
+        // Only include records that match the filtered type
+        let filteredRecords = mockRecords;
+        if (filterJenis && filterJenis !== 'all') {
+          filteredRecords = mockRecords.filter(record => record.jenisAbsensi === filterJenis);
+        }
+
+        setAbsensiRecords(filteredRecords);
+      } else {
+        // Other roles shouldn't access this page
+        setAbsensiRecords([]);
       }
-      
-      if (filterTanggal) {
-        query = query.eq('tanggal', filterTanggal);
-      } else if (filterBulan) {
-        // Filter by month and year
-        const yearMonth = `${filterTahun}-${filterBulan}`;
-        query = query.ilike('tanggal', `${yearMonth}%`);
-      }
-
-      const { data, error } = await query;
-
-      if (error) {
-        throw error;
-      }
-
-      setAbsensiRecords(data || []);
     } catch (error: any) {
       console.error('Error fetching attendance records:', error);
       alert('Gagal memuat data laporan: ' + error.message);
@@ -70,7 +106,7 @@ export default function LaporanPage() {
     // Format the data for export
     const formattedData = formatAttendanceForExport(
       absensiRecords,
-      filterJenis === 'all' ? undefined : (filterJenis as 'guru' | 'murid')
+      filterJenis === 'all' ? undefined : (filterJenis as AttendanceType)
     );
 
     // Build filename based on filters
@@ -108,16 +144,16 @@ export default function LaporanPage() {
       <main className="md:ml-64 p-6">
         <div className="max-w-7xl mx-auto">
           <h1 className="text-2xl font-bold text-gray-800 mb-6">Laporan Absensi</h1>
-          
+
           <div className="bg-white p-6 rounded-lg shadow mb-6">
             <h2 className="text-lg font-semibold text-gray-800 mb-4">Filter Laporan</h2>
-            
+
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Jenis Absensi</label>
                 <select
                   value={filterJenis}
-                  onChange={(e) => setFilterJenis(e.target.value)}
+                  onChange={(e) => setFilterJenis(e.target.value as AttendanceType | 'all')}
                   className="w-full p-2 border border-gray-300 rounded-md"
                 >
                   <option value="all">Semua</option>
@@ -125,7 +161,7 @@ export default function LaporanPage() {
                   <option value="murid">Murid</option>
                 </select>
               </div>
-              
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Tanggal Tertentu</label>
                 <input
@@ -139,7 +175,7 @@ export default function LaporanPage() {
                   className="w-full p-2 border border-gray-300 rounded-md"
                 />
               </div>
-              
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Filter Bulan</label>
                 <select
@@ -166,7 +202,7 @@ export default function LaporanPage() {
                   <option value="12">Desember</option>
                 </select>
               </div>
-              
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Tahun</label>
                 <select
@@ -185,7 +221,7 @@ export default function LaporanPage() {
                 </select>
               </div>
             </div>
-            
+
             <div className="flex flex-wrap gap-4">
               <button
                 onClick={fetchAbsensiRecords}
@@ -193,7 +229,7 @@ export default function LaporanPage() {
               >
                 Terapkan Filter
               </button>
-              
+
               <button
                 onClick={exportToExcelHandler}
                 className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors flex items-center"
@@ -205,16 +241,16 @@ export default function LaporanPage() {
               </button>
             </div>
           </div>
-          
+
           <div className="bg-white p-6 rounded-lg shadow">
             <h2 className="text-lg font-semibold text-gray-800 mb-4">
-              {filterTanggal 
+              {filterTanggal
                 ? `Data Absensi Tanggal ${new Date(filterTanggal).toLocaleDateString('id-ID')}`
                 : filterBulan
                 ? `Data Absensi Bulan ${new Date(`${filterTahun}-${filterBulan}-01`).toLocaleString('id-ID', { month: 'long', year: 'numeric' })}`
                 : 'Semua Data Absensi'}
             </h2>
-            
+
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
@@ -244,24 +280,24 @@ export default function LaporanPage() {
                     absensiRecords.map((record) => (
                       <tr key={record.id}>
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                          {record.user?.nama_lengkap || 'N/A'}
+                          {record.user?.namaLengkap || 'N/A'}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {record.user?.nomor_induk || 'N/A'}
+                          {record.user?.nomorInduk || 'N/A'}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                           {new Date(record.tanggal).toLocaleDateString('id-ID')}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {record.jam_masuk || '-'}
+                          {record.jamMasuk ? new Date(record.jamMasuk).toLocaleTimeString('id-ID') : '-'}
                         </td>
                         <td className="px-6 py-4 text-sm text-gray-500">
                           {record.keterangan || '-'}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
-                            ${record.jenis_absensi === 'guru' ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800'}`}>
-                            {record.jenis_absensi === 'guru' ? 'Guru' : 'Murid'}
+                          <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full
+                            ${record.jenisAbsensi === 'guru' ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800'}`}>
+                            {record.jenisAbsensi === 'guru' ? 'Guru' : 'Murid'}
                           </span>
                         </td>
                       </tr>
@@ -276,7 +312,7 @@ export default function LaporanPage() {
                 </tbody>
               </table>
             </div>
-            
+
             <div className="mt-6 text-sm text-gray-600">
               <p>Jumlah data: {absensiRecords.length} catatan</p>
             </div>

@@ -2,8 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { supabase } from '@/lib/supabaseClient';
-import { createUser } from '@/lib/prismaDataAccess';
+import { hashPassword } from '@/lib/jwtAuth';
 import Link from 'next/link';
 
 export default function SignupPage() {
@@ -23,47 +22,12 @@ export default function SignupPage() {
     setError('');
 
     try {
-      // First, sign up the user with Supabase Auth
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email,
-        password,
-      });
-
-      if (authError) {
-        throw authError;
-      }
-
-      if (authData.user) {
-        // Insert user data into our custom users table using Prisma
-        await createUser({
-          id: authData.user.id,
-          email,
-          passwordHash: '', // Password is handled by Supabase
-          namaLengkap,
-          nomorInduk,
-          role: userRole
-        });
-
-        // Send email confirmation
-        if (authData.session) {
-          // User is already logged in
-          router.push('/dashboard');
-        } else {
-          alert('Akun berhasil dibuat! Silakan cek email Anda untuk verifikasi.');
-          router.push('/login');
-        }
-      }
+      // Database functionality is currently disabled
+      console.warn("Database functionality disabled - signup not available");
+      alert('Fitur pendaftaran akun dinonaktifkan karena akses database sedang bermasalah.');
+      router.push('/login');
     } catch (err: any) {
-      // If user table creation failed, delete the auth user
-      if (err && err.message.includes('duplicate key value')) {
-        // Clean up: delete the auth user if database insertion failed
-        try {
-          await supabase.auth.admin.deleteUser(authData.user?.id || '');
-        } catch (deleteErr) {
-          console.error('Failed to clean up user:', deleteErr);
-        }
-      }
-
+      console.error('Signup error:', err);
       setError(err.message || 'Gagal membuat akun. Silakan coba lagi.');
     } finally {
       setLoading(false);

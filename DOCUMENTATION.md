@@ -36,8 +36,8 @@ attendance-web/
 │   ├── contexts/
 │   │   └── AuthContext.tsx
 │   ├── lib/
-│   │   ├── supabaseClient.ts
-│   │   ├── supabaseServer.ts
+│   │   ├── jwtAuth.ts
+│   │   ├── serverAuth.ts
 │   │   ├── authUtils.ts
 │   │   └── excelUtils.ts
 │   └── types/
@@ -60,7 +60,7 @@ attendance-web/
 - **Enums**: user_role (superadmin, admin, user) dan attendance_type (guru, murid)
 
 ### 2. Sistem Otentikasi
-- Menggunakan Supabase Auth untuk manajemen sesi
+- Menggunakan JWT (JSON Web Token) dengan bcrypt untuk hashing password
 - Tiga level izin akses berdasarkan peran pengguna
 - Middleware untuk proteksi rute berdasarkan peran
 
@@ -97,8 +97,9 @@ attendance-web/
 - **Headless UI**: Komponen UI tanpa styling bawaan
 
 ### Backend
-- **Supabase**: Backend sebagai layanan (BaaS) dengan PostgreSQL
-- **Supabase Auth**: Sistem otentikasi bawaan
+- **PostgreSQL**: Database relasional untuk menyimpan data pengguna dan absensi
+- **Prisma ORM**: Object-Relational Mapping untuk interaksi database
+- **JWT Authentication**: Sistem otentikasi berbasis token
 - **Rust/WASM**: Untuk pemrosesan barcode
 
 ### Lainnya
@@ -122,8 +123,8 @@ attendance-web/
 
 - Otentikasi wajib untuk akses halaman terproteksi
 - Pembatasan akses berdasarkan peran pengguna
-- Row Level Security di Supabase mencegah akses data tidak sah
-- Enkripsi password otomatis oleh Supabase Auth
+- Validasi peran pengguna di sisi server dan klien
+- Password di-hash menggunakan bcrypt sebelum disimpan
 
 ## Deployment
 

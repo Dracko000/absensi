@@ -14,7 +14,8 @@ Aplikasi absensi berbasis web untuk sekolah dengan tiga tingkat pengguna: Kepala
 ## Teknologi yang Digunakan
 
 - **Frontend**: Next.js 16, TypeScript, Tailwind CSS
-- **Backend**: Supabase (PostgreSQL, Authentication)
+- **Backend**: PostgreSQL (Prisma ORM)
+- **Authentication**: JWT-based with bcrypt password hashing
 - **Barcode**: Zxing for scanning, JsBarcode for generation
 - **UI/UX**: Headless UI, Heroicons
 - **Ekspor Excel**: xlsx library
@@ -32,10 +33,10 @@ cd attendance-web
 npm install
 ```
 
-3. Buat file `.env.local` dan tambahkan konfigurasi Supabase:
+3. Buat file `.env.local` dan tambahkan konfigurasi database:
 ```env
-NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+DATABASE_URL=postgresql://username:password@localhost:5432/attendance_db
+JWT_SECRET=your_jwt_secret_key
 ```
 
 4. Jalankan aplikasi:
@@ -45,12 +46,15 @@ npm run dev
 
 ## Konfigurasi Database
 
-1. Buat proyek di [Supabase](https://supabase.com)
-2. Gunakan skema database dari folder `database/migrations/`
-3. Terapkan migrasi SQL secara berurutan:
-   - Jalankan `database/migrations/01_create_tables.sql`
-   - Jalankan `database/migrations/02_create_policies.sql`
-4. Perbarui file `.env.local` dengan URL dan anon key dari Supabase Anda
+1. Pastikan Anda memiliki PostgreSQL yang berjalan di sistem Anda
+2. Buat database baru untuk aplikasi ini
+3. Jalankan migrasi Prisma untuk membuat tabel-tabel yang diperlukan:
+
+```bash
+npx prisma migrate dev
+```
+
+Atau jika Anda ingin menjalankan migrasi secara manual, Anda bisa menggunakan file SQL yang tersedia di direktori `database/migrations/`
 
 ## Struktur Pengguna
 

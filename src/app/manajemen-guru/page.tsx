@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import Header from '@/components/Header';
 import Sidebar from '@/components/Sidebar';
-import { supabase } from '@/lib/supabaseClient';
+import { hashPassword } from '@/lib/jwtAuth';
 
 export default function ManajemenGuruPage() {
   const router = useRouter();
@@ -13,9 +13,9 @@ export default function ManajemenGuruPage() {
   const [guruList, setGuruList] = useState<any[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [formData, setFormData] = useState({
-    nama_lengkap: '',
+    namaLengkap: '',
     email: '',
-    nomor_induk: '',
+    nomorInduk: '',
     password: ''
   });
 
@@ -29,17 +29,36 @@ export default function ManajemenGuruPage() {
 
   const fetchGuruList = async () => {
     try {
-      const { data, error } = await supabase
-        .from('users')
-        .select('*')
-        .eq('role', 'admin')
-        .order('created_at', { ascending: false });
-
-      if (error) {
-        throw error;
+      // Database functionality is currently disabled
+      console.warn("Database functionality disabled - using mock data");
+      // Using mock data since database access is disabled
+      // Only superadmin can see all teachers, admin shouldn't have access to this page
+      if (userRole === 'admin') {
+        // Admin should not see this page, redirect handled by auth check
+        setGuruList([]);
+      } else {
+        // Superadmin can see all teachers
+        setGuruList([
+          {
+            id: 'mock-1',
+            email: 'guru1@sekolah.test',
+            namaLengkap: 'Guru Satu',
+            nomorInduk: 'GURU001',
+            role: 'admin',
+            createdAt: new Date(),
+            updatedAt: new Date()
+          },
+          {
+            id: 'mock-2',
+            email: 'guru2@sekolah.test',
+            namaLengkap: 'Guru Dua',
+            nomorInduk: 'GURU002',
+            role: 'admin',
+            createdAt: new Date(),
+            updatedAt: new Date()
+          }
+        ]);
       }
-
-      setGuruList(data || []);
     } catch (error: any) {
       console.error('Error fetching guru list:', error);
       alert('Gagal memuat daftar guru: ' + error.message);
@@ -48,42 +67,16 @@ export default function ManajemenGuruPage() {
 
   const handleAddGuru = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     try {
-      // First, create the user in Supabase Auth
-      const { data: authData, error: authError } = await supabase.auth.admin.createUser({
-        email: formData.email,
-        password: formData.password,
-        email_confirm: true
-      });
-
-      if (authError) {
-        throw authError;
-      }
-
-      // Then, create the user in our users table
-      const { error: userError } = await supabase
-        .from('users')
-        .insert([{
-          id: authData.user.id,
-          email: formData.email,
-          nama_lengkap: formData.nama_lengkap,
-          nomor_induk: formData.nomor_induk,
-          role: 'admin'
-        }]);
-
-      if (userError) {
-        // If user table creation failed, delete the auth user
-        await supabase.auth.admin.deleteUser(authData.user.id);
-        throw userError;
-      }
-
-      alert('Guru berhasil ditambahkan');
+      // Database functionality is currently disabled
+      console.warn("Database functionality disabled - add guru not available");
+      alert('Fitur tambah guru dinonaktifkan karena akses database sedang bermasalah.');
       setShowForm(false);
       setFormData({
-        nama_lengkap: '',
+        namaLengkap: '',
         email: '',
-        nomor_induk: '',
+        nomorInduk: '',
         password: ''
       });
       fetchGuruList();
@@ -119,7 +112,7 @@ export default function ManajemenGuruPage() {
               {showForm ? 'Batal' : '+ Tambah Guru'}
             </button>
           </div>
-          
+
           {showForm && (
             <div className="bg-white p-6 rounded-lg shadow mb-6">
               <h2 className="text-lg font-semibold text-gray-800 mb-4">Tambah Guru Baru</h2>
@@ -129,8 +122,8 @@ export default function ManajemenGuruPage() {
                     <label className="block text-sm font-medium text-gray-700 mb-1">Nama Lengkap</label>
                     <input
                       type="text"
-                      value={formData.nama_lengkap}
-                      onChange={(e) => setFormData({...formData, nama_lengkap: e.target.value})}
+                      value={formData.namaLengkap}
+                      onChange={(e) => setFormData({...formData, namaLengkap: e.target.value})}
                       className="w-full p-2 border border-gray-300 rounded-md"
                       required
                     />
@@ -149,8 +142,8 @@ export default function ManajemenGuruPage() {
                     <label className="block text-sm font-medium text-gray-700 mb-1">Nomor Induk</label>
                     <input
                       type="text"
-                      value={formData.nomor_induk}
-                      onChange={(e) => setFormData({...formData, nomor_induk: e.target.value})}
+                      value={formData.nomorInduk}
+                      onChange={(e) => setFormData({...formData, nomorInduk: e.target.value})}
                       className="w-full p-2 border border-gray-300 rounded-md"
                       required
                     />
@@ -177,10 +170,10 @@ export default function ManajemenGuruPage() {
               </form>
             </div>
           )}
-          
+
           <div className="bg-white p-6 rounded-lg shadow">
             <h2 className="text-lg font-semibold text-gray-800 mb-4">Daftar Guru</h2>
-            
+
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
@@ -204,16 +197,16 @@ export default function ManajemenGuruPage() {
                     guruList.map((guru) => (
                       <tr key={guru.id}>
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                          {guru.nama_lengkap}
+                          {guru.namaLengkap}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                           {guru.email}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {guru.nomor_induk}
+                          {guru.nomorInduk}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {new Date(guru.created_at).toLocaleDateString('id-ID')}
+                          {new Date(guru.createdAt).toLocaleDateString('id-ID')}
                         </td>
                       </tr>
                     ))

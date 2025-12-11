@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import Header from '@/components/Header';
 import Sidebar from '@/components/Sidebar';
-import { supabase } from '@/lib/supabaseClient';
 import { exportToExcel, formatAttendanceForExport } from '@/lib/excelUtils';
 
 export default function LaporanHarianPage() {
@@ -24,22 +23,80 @@ export default function LaporanHarianPage() {
 
   const fetchAbsensiRecords = async () => {
     try {
-      // For admin, only fetch student attendance records
-      const { data, error } = await supabase
-        .from('attendance_records')
-        .select(`
-          *,
-          user:users(nama_lengkap, nomor_induk, role)
-        `)
-        .eq('tanggal', tanggal)
-        .eq('jenis_absensi', 'murid') // Only student attendance for admin
-        .order('user:nama_lengkap');
-
-      if (error) {
-        throw error;
+      // Database functionality is currently disabled
+      console.warn("Database functionality disabled - using mock data");
+      // Using mock data since database access is disabled
+      // Admin (Guru) can only see student attendance for the day
+      if (userRole === 'admin') {
+        setAbsensiRecords([
+          {
+            id: 'mock-s1',
+            userId: 'mock-student-1',
+            tanggal: new Date(tanggal),
+            jamMasuk: new Date(`${tanggal}T08:00:00`),
+            jamKeluar: new Date(`${tanggal}T15:00:00`),
+            jenisAbsensi: 'murid',
+            barcode: 'mock-barcode',
+            keterangan: 'Hadir',
+            createdAt: new Date(),
+            user: {
+              id: 'mock-student-1',
+              email: 'murid1@sekolah.test',
+              password: '',
+              namaLengkap: 'Murid Satu',
+              nomorInduk: 'MURID001',
+              role: 'user',
+              createdAt: new Date(),
+              updatedAt: new Date()
+            }
+          },
+          {
+            id: 'mock-s2',
+            userId: 'mock-student-2',
+            tanggal: new Date(tanggal),
+            jamMasuk: new Date(`${tanggal}T08:15:00`),
+            jamKeluar: new Date(`${tanggal}T15:00:00`),
+            jenisAbsensi: 'murid',
+            barcode: 'mock-barcode',
+            keterangan: 'Hadir',
+            createdAt: new Date(),
+            user: {
+              id: 'mock-student-2',
+              email: 'murid2@sekolah.test',
+              password: '',
+              namaLengkap: 'Murid Dua',
+              nomorInduk: 'MURID002',
+              role: 'user',
+              createdAt: new Date(),
+              updatedAt: new Date()
+            }
+          },
+          {
+            id: 'mock-s3',
+            userId: 'mock-student-3',
+            tanggal: new Date(tanggal),
+            jamMasuk: null, // Tidak masuk
+            jamKeluar: null,
+            jenisAbsensi: 'murid',
+            barcode: 'mock-barcode',
+            keterangan: 'Alfa',
+            createdAt: new Date(),
+            user: {
+              id: 'mock-student-3',
+              email: 'murid3@sekolah.test',
+              password: '',
+              namaLengkap: 'Murid Tiga',
+              nomorInduk: 'MURID003',
+              role: 'user',
+              createdAt: new Date(),
+              updatedAt: new Date()
+            }
+          }
+        ]);
+      } else {
+        // Other roles shouldn't access this page
+        setAbsensiRecords([]);
       }
-
-      setAbsensiRecords(data || []);
     } catch (error: any) {
       console.error('Error fetching attendance records:', error);
       alert('Gagal memuat data laporan harian: ' + error.message);
@@ -81,7 +138,7 @@ export default function LaporanHarianPage() {
       <main className="md:ml-64 p-6">
         <div className="max-w-7xl mx-auto">
           <h1 className="text-2xl font-bold text-gray-800 mb-6">Laporan Harian Absensi Murid</h1>
-          
+
           <div className="bg-white p-6 rounded-lg shadow mb-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
               <div>
@@ -93,7 +150,7 @@ export default function LaporanHarianPage() {
                   className="w-full p-2 border border-gray-300 rounded-md"
                 />
               </div>
-              
+
               <div className="flex items-end">
                 <button
                   onClick={fetchAbsensiRecords}
@@ -103,7 +160,7 @@ export default function LaporanHarianPage() {
                 </button>
               </div>
             </div>
-            
+
             <div className="flex flex-wrap gap-4">
               <button
                 onClick={exportToExcelHandler}
@@ -116,7 +173,7 @@ export default function LaporanHarianPage() {
               </button>
             </div>
           </div>
-          
+
           <div className="bg-white p-6 rounded-lg shadow">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-lg font-semibold text-gray-800">
@@ -124,7 +181,7 @@ export default function LaporanHarianPage() {
               </h2>
               <p className="text-gray-600">Jumlah: {absensiRecords.length} murid hadir</p>
             </div>
-            
+
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
@@ -154,13 +211,13 @@ export default function LaporanHarianPage() {
                           {index + 1}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                          {record.user?.nama_lengkap || 'N/A'}
+                          {record.user?.namaLengkap || 'N/A'}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {record.user?.nomor_induk || 'N/A'}
+                          {record.user?.nomorInduk || 'N/A'}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {record.jam_masuk || '-'}
+                          {record.jamMasuk ? new Date(record.jamMasuk).toLocaleTimeString('id-ID') : '-'}
                         </td>
                         <td className="px-6 py-4 text-sm text-gray-500">
                           {record.keterangan || '-'}
@@ -177,7 +234,7 @@ export default function LaporanHarianPage() {
                 </tbody>
               </table>
             </div>
-            
+
             {absensiRecords.length > 0 && (
               <div className="mt-4 p-4 bg-blue-50 rounded-lg">
                 <h3 className="font-medium text-blue-800 mb-2">Ringkasan</h3>

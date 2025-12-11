@@ -1,19 +1,21 @@
-import { supabase } from './supabaseClient';
-import { getUserById } from './prismaDataAccess';
 import { redirect } from 'next/navigation';
+import { getUserFromToken } from './jwtAuth';
 
 // Role types based on our database
 export type UserRole = 'superadmin' | 'admin' | 'user';
 
 // Function to get current user session
 export const getCurrentUser = async () => {
-  const { data: { session }, error } = await supabase.auth.getSession();
-
-  if (error || !session) {
-    return null;
+  // Get token from localStorage
+  if (typeof window !== 'undefined') {
+    const token = localStorage.getItem('auth-token');
+    if (token) {
+      const userInfo = getUserFromToken(token);
+      return userInfo;
+    }
   }
 
-  return session.user;
+  return null;
 };
 
 // Function to check user role
@@ -24,36 +26,26 @@ export const getUserRole = async (): Promise<UserRole | null> => {
     return null;
   }
 
-  // Get user details from our users table using Prisma
-  const userData = await getUserById(user.id);
-
-  if (!userData) {
-    return null;
-  }
-
-  return userData.role as UserRole;
+  // Get user details from our users table using Prisma (currently disabled)
+  // This would normally fetch from database
+  console.warn("Database access disabled - using role from token");
+  return user.role as UserRole;
 };
 
 // Function to sign in user
 export const signIn = async (email: string, password: string) => {
-  const { data, error } = await supabase.auth.signInWithPassword({
-    email,
-    password,
-  });
-
-  if (error) {
-    throw new Error(error.message);
-  }
-
-  return data;
+  // This function is deprecated since we now handle sign in directly in AuthContext
+  // This function is just kept for compatibility if needed elsewhere
+  console.warn('signIn function in authUtils is deprecated. Use AuthContext.signIn instead.');
+  return null;
 };
 
 // Function to sign out user
 export const signOut = async () => {
-  const { error } = await supabase.auth.signOut();
-
-  if (error) {
-    throw new Error(error.message);
+  // This function is deprecated since we now handle sign out directly in AuthContext
+  // Clear the token from localStorage
+  if (typeof window !== 'undefined') {
+    localStorage.removeItem('auth-token');
   }
 };
 
