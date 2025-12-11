@@ -1,6 +1,6 @@
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
-import getNeonClient from './neonClient';
+import { getUserByEmail } from '../actions';
 
 // Define User type based on our schema
 interface User {
@@ -16,15 +16,6 @@ interface User {
 
 // JWT secret from environment variables
 const JWT_SECRET = process.env.JWT_SECRET || '240103800a4d1eda34cc6e9db9b94e88';
-
-// Function to get database client safely
-const getDbClient = () => {
-  const sql = getNeonClient();
-  if (!sql) {
-    throw new Error('Database client not available');
-  }
-  return sql;
-};
 
 // Generate a JWT token for a user using the provided secret
 export const generateToken = (user: User): string => {
@@ -67,29 +58,24 @@ export const comparePassword = async (password: string, hashedPassword: string):
 // Authenticate a user by email and password
 export const authenticateUser = async (email: string, password: string): Promise<User | null> => {
   try {
-    // Get the database client
-    const dbClient = getDbClient();
-
     // Query the user from Neon database
-    const result = await dbClient`SELECT id, email, password, namaLengkap, nomorInduk, role, createdAt, updatedAt FROM users WHERE email = ${email}`;
+    const user = await getUserByEmail(email);
 
-    if (result && result.length > 0) {
-      const userData = result[0];
-
+    if (user) {
       // Compare the provided password with the hashed password
-      const isValidPassword = await comparePassword(password, userData.password);
+      const isValidPassword = await comparePassword(password, user.password);
 
       if (isValidPassword) {
         // Return user with proper typing
         return {
-          id: userData.id,
-          email: userData.email,
-          password: userData.password,
-          namaLengkap: userData.namaLengkap,
-          nomorInduk: userData.nomorInduk,
-          role: userData.role,
-          createdAt: new Date(userData.createdAt),
-          updatedAt: new Date(userData.updatedAt),
+          id: user.id,
+          email: user.email,
+          password: user.password,
+          namaLengkap: user.namaLengkap,
+          nomorInduk: user.nomorInduk,
+          role: user.role,
+          createdAt: new Date(user.createdAt),
+          updatedAt: new Date(user.updatedAt),
         };
       }
     }

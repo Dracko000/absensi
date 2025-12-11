@@ -7,8 +7,7 @@ import Header from '@/components/Header';
 import Sidebar from '@/components/Sidebar';
 import BarcodeScanner from '@/components/BarcodeScanner';
 import BarcodeGenerator from '@/components/BarcodeGenerator';
-import getNeonClient from '@/lib/neonClient';
-const sql = getNeonClient();
+import { getUserByEmail, getUserByNomorInduk, insertAttendanceRecord } from '@/actions';
 
 // Define AttendanceType as both type and constant for runtime usage
 type AttendanceType = 'guru' | 'murid';
@@ -44,29 +43,15 @@ export default function AbsensiGuruPage() {
 
   const fetchUserByBarcode = async (barcode: string) => {
     try {
-      // Get the database client
-      const dbClient = getNeonClient();
-      if (!dbClient) {
-        alert('Database tidak tersedia');
-        return;
-      }
-
       // Query the user from Neon database by barcode (which is stored as nomorInduk)
-      const result = await dbClient`SELECT id, email, password, namaLengkap, nomorInduk, role, createdAt, updatedAt FROM users WHERE nomorInduk = ${barcode}`;
+      const user = await getUserByNomorInduk(barcode);
 
-      if (result && result.length > 0) {
-        const user = result[0];
-
-        if (!user) {
-          alert('Pengguna tidak ditemukan dengan barcode tersebut');
-          return;
-        }
-
-        setSelectedUser(user);
-      } else {
+      if (!user) {
         alert('Pengguna tidak ditemukan dengan barcode tersebut');
         return;
       }
+
+      setSelectedUser(user);
     } catch (error) {
       console.error('Error fetching user:', error);
       alert('Terjadi kesalahan saat mencari pengguna');
@@ -84,37 +69,24 @@ export default function AbsensiGuruPage() {
     }
 
     try {
-      // Get the database client
-      const dbClient = getNeonClient();
-      if (!dbClient) {
-        alert('Database tidak tersedia');
-        return;
-      }
-
       // Check if attendance already exists for this user and date
-      const existingRecord = await dbClient`SELECT * FROM attendance_records WHERE userId = ${selectedUser.id} AND tanggal::date = ${tanggal}::date`;
-
-      if (existingRecord && existingRecord.length > 0) {
-        alert('Kehadiran untuk tanggal ini sudah dicatat');
-        return;
-      }
-
-      // Create attendance record in the database
+      // This requires a new function in actions.ts to check existing records
       const date = new Date(tanggal);
       const now = new Date(); // Current time for jamMasuk
 
-      const result = await dbClient`INSERT INTO attendance_records (userId, tanggal, jamMasuk, jenisAbsensi, barcode, keterangan)
-                               VALUES (${selectedUser.id}, ${date}, ${now}, ${AttendanceType.guru}, ${scannedBarcode || selectedUser.nomorInduk}, ${keterangan})
-                               RETURNING *`;
+      await insertAttendanceRecord(
+        selectedUser.id,
+        date,
+        now,
+        'guru',
+        scannedBarcode || selectedUser.nomorInduk,
+        keterangan
+      );
 
-      if (result && result.length > 0) {
-        alert('Absensi berhasil disimpan');
-        setScannedBarcode(null);
-        setSelectedUser(null);
-        setKeterangan('');
-      } else {
-        throw new Error('Gagal menyimpan data absensi');
-      }
+      alert('Absensi berhasil disimpan');
+      setScannedBarcode(null);
+      setSelectedUser(null);
+      setKeterangan('');
     } catch (error: any) {
       console.error('Error saving attendance:', error);
       alert('Gagal menyimpan absensi: ' + error.message);

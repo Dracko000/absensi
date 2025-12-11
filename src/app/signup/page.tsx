@@ -4,10 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { hashPassword } from '@/lib/jwtAuth';
 import Link from 'next/link';
-import getNeonClient from '@/lib/neonClient';
-
-// Force dynamic rendering to avoid build-time database access
-export const dynamic = 'force-dynamic';
+import { insertUser } from '@/actions';
 
 export default function SignupPage() {
   const [email, setEmail] = useState('');
@@ -29,21 +26,11 @@ export default function SignupPage() {
       // Hash the password
       const hashedPassword = await hashPassword(password);
 
-      // Get the database client
-      const sql = getNeonClient();
-      if (!sql) {
-        throw new Error('Database client not available');
-      }
+      // Insert the new user into the database using server action
+      await insertUser(email, hashedPassword, namaLengkap, nomorInduk, userRole);
 
-      // Insert the new user into the database
-      const result = await sql`INSERT INTO users (email, password, namaLengkap, nomorInduk, role) VALUES (${email}, ${hashedPassword}, ${namaLengkap}, ${nomorInduk}, ${userRole}) RETURNING *`;
-
-      if (result && result.length > 0) {
-        alert('Akun berhasil dibuat. Silakan masuk ke sistem.');
-        router.push('/login');
-      } else {
-        throw new Error('Gagal membuat akun');
-      }
+      alert('Akun berhasil dibuat. Silakan masuk ke sistem.');
+      router.push('/login');
     } catch (err: any) {
       console.error('Signup error:', err);
       setError(err.message || 'Gagal membuat akun. Silakan coba lagi.');

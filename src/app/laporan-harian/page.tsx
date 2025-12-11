@@ -6,8 +6,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import Header from '@/components/Header';
 import Sidebar from '@/components/Sidebar';
 import { exportToExcel, formatAttendanceForExport } from '@/lib/excelUtils';
-import getNeonClient from '@/lib/neonClient';
-const sql = getNeonClient();
+import { getAttendanceRecords } from '@/actions';
 
 export default function LaporanHarianPage() {
   const router = useRouter();
@@ -25,21 +24,13 @@ export default function LaporanHarianPage() {
 
   const fetchAbsensiRecords = async () => {
     try {
-      // Get the database client
-      const dbClient = getNeonClient();
-      if (!dbClient) {
-        alert('Database tidak tersedia');
-        return;
-      }
-
       // Admin (Guru) can only see student attendance for the day
       if (userRole === 'admin') {
         // Fetch student attendance records for the specific date
-        const result = await dbClient`SELECT ar.*, u.namaLengkap, u.nomorInduk, u.role
-                                 FROM attendance_records ar
-                                 JOIN users u ON ar.userId = u.id
-                                 WHERE u.role = 'user' AND ar.tanggal::date = ${tanggal}::date
-                                 ORDER BY ar.tanggal DESC`;
+        let result = await getAttendanceRecords(null, tanggal, null);
+
+        // Filter for user role only (students)
+        result = result.filter((record: any) => record.role === 'user');
 
         setAbsensiRecords(result);
       } else {

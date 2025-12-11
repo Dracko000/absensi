@@ -5,8 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import Header from '@/components/Header';
 import Sidebar from '@/components/Sidebar';
-import getNeonClient from '@/lib/neonClient';
-const sql = getNeonClient();
+import { getAttendanceRecords } from '@/actions';
 
 // Define AttendanceType as both type and constant for runtime usage
 type AttendanceType = 'guru' | 'murid';
@@ -34,68 +33,16 @@ export default function RiwayatAbsensiPage() {
 
   const fetchAbsensiRecords = async () => {
     try {
-      // Get the database client
-      const dbClient = getNeonClient();
-      if (!dbClient) {
-        alert('Database tidak tersedia');
-        return;
-      }
-
       // Build the query based on user role and filters
       let query: any[];
       if (userRole === 'admin') {
         // Admin (Guru) can only see student attendance
-        if (filterTanggal && filterJenis) {
-          query = await dbClient`SELECT ar.*, u.namaLengkap, u.nomorInduk, u.role
-                            FROM attendance_records ar
-                            JOIN users u ON ar.userId = u.id
-                            WHERE u.role = 'user' AND ar.jenisAbsensi = ${filterJenis} AND ar.tanggal::date = ${filterTanggal}::date
-                            ORDER BY ar.tanggal DESC`;
-        } else if (filterTanggal) {
-          query = await dbClient`SELECT ar.*, u.namaLengkap, u.nomorInduk, u.role
-                            FROM attendance_records ar
-                            JOIN users u ON ar.userId = u.id
-                            WHERE u.role = 'user' AND ar.tanggal::date = ${filterTanggal}::date
-                            ORDER BY ar.tanggal DESC`;
-        } else if (filterJenis) {
-          query = await dbClient`SELECT ar.*, u.namaLengkap, u.nomorInduk, u.role
-                            FROM attendance_records ar
-                            JOIN users u ON ar.userId = u.id
-                            WHERE u.role = 'user' AND ar.jenisAbsensi = ${filterJenis}
-                            ORDER BY ar.tanggal DESC`;
-        } else {
-          query = await dbClient`SELECT ar.*, u.namaLengkap, u.nomorInduk, u.role
-                            FROM attendance_records ar
-                            JOIN users u ON ar.userId = u.id
-                            WHERE u.role = 'user'
-                            ORDER BY ar.tanggal DESC`;
-        }
+        query = await getAttendanceRecords(null, filterTanggal || null, filterJenis || null);
+        // Filter for user role only
+        query = query.filter((record: any) => record.role === 'user');
       } else if (userRole === 'superadmin') {
         // Superadmin can see all attendance (teacher and student)
-        if (filterTanggal && filterJenis) {
-          query = await dbClient`SELECT ar.*, u.namaLengkap, u.nomorInduk, u.role
-                            FROM attendance_records ar
-                            JOIN users u ON ar.userId = u.id
-                            WHERE ar.jenisAbsensi = ${filterJenis} AND ar.tanggal::date = ${filterTanggal}::date
-                            ORDER BY ar.tanggal DESC`;
-        } else if (filterTanggal) {
-          query = await dbClient`SELECT ar.*, u.namaLengkap, u.nomorInduk, u.role
-                            FROM attendance_records ar
-                            JOIN users u ON ar.userId = u.id
-                            WHERE ar.tanggal::date = ${filterTanggal}::date
-                            ORDER BY ar.tanggal DESC`;
-        } else if (filterJenis) {
-          query = await dbClient`SELECT ar.*, u.namaLengkap, u.nomorInduk, u.role
-                            FROM attendance_records ar
-                            JOIN users u ON ar.userId = u.id
-                            WHERE ar.jenisAbsensi = ${filterJenis}
-                            ORDER BY ar.tanggal DESC`;
-        } else {
-          query = await dbClient`SELECT ar.*, u.namaLengkap, u.nomorInduk, u.role
-                            FROM attendance_records ar
-                            JOIN users u ON ar.userId = u.id
-                            ORDER BY ar.tanggal DESC`;
-        }
+        query = await getAttendanceRecords(null, filterTanggal || null, filterJenis || null);
       } else {
         query = [];
       }
