@@ -6,6 +6,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import Header from '@/components/Header';
 import Sidebar from '@/components/Sidebar';
 import { hashPassword } from '@/lib/jwtAuth';
+import sql from '@/lib/neonClient';
 
 export default function ManajemenMuridPage() {
   const router = useRouter();
@@ -29,67 +30,9 @@ export default function ManajemenMuridPage() {
 
   const fetchMuridList = async () => {
     try {
-      // Database functionality is currently disabled
-      console.warn("Database functionality disabled - using mock data");
-      // Using mock data since database access is disabled
-      // Only superadmin can see all students, admin should see students in their class
-      if (userRole === 'admin') {
-        // Admin (Guru) would see students in their assigned class
-        setMuridList([
-          {
-            id: 'mock-s1',
-            email: 'murid1@sekolah.test',
-            namaLengkap: 'Murid Kelas A',
-            nomorInduk: 'MURID001',
-            role: 'user',
-            createdAt: new Date(),
-            updatedAt: new Date()
-          },
-          {
-            id: 'mock-s2',
-            email: 'murid2@sekolah.test',
-            namaLengkap: 'Murid Kelas A',
-            nomorInduk: 'MURID002',
-            role: 'user',
-            createdAt: new Date(),
-            updatedAt: new Date()
-          }
-        ]);
-      } else if (userRole === 'superadmin') {
-        // Superadmin can see all students
-        setMuridList([
-          {
-            id: 'mock-s1',
-            email: 'murid1@sekolah.test',
-            namaLengkap: 'Murid Satu',
-            nomorInduk: 'MURID001',
-            role: 'user',
-            createdAt: new Date(),
-            updatedAt: new Date()
-          },
-          {
-            id: 'mock-s2',
-            email: 'murid2@sekolah.test',
-            namaLengkap: 'Murid Dua',
-            nomorInduk: 'MURID002',
-            role: 'user',
-            createdAt: new Date(),
-            updatedAt: new Date()
-          },
-          {
-            id: 'mock-s3',
-            email: 'murid3@sekolah.test',
-            namaLengkap: 'Murid Tiga',
-            nomorInduk: 'MURID003',
-            role: 'user',
-            createdAt: new Date(),
-            updatedAt: new Date()
-          }
-        ]);
-      } else {
-        // Regular user (student) shouldn't access this page
-        setMuridList([]);
-      }
+      // Fetch all users with role 'user' (students) from the database
+      const result = await sql`SELECT id, email, namaLengkap, nomorInduk, role, createdAt, updatedAt FROM users WHERE role = 'user'`;
+      setMuridList(result);
     } catch (error: any) {
       console.error('Error fetching murid list:', error);
       alert('Gagal memuat daftar murid: ' + error.message);
@@ -100,17 +43,27 @@ export default function ManajemenMuridPage() {
     e.preventDefault();
 
     try {
-      // Database functionality is currently disabled
-      console.warn("Database functionality disabled - add murid not available");
-      alert('Fitur tambah murid dinonaktifkan karena akses database sedang bermasalah.');
-      setShowForm(false);
-      setFormData({
-        namaLengkap: '',
-        email: '',
-        nomorInduk: '',
-        password: ''
-      });
-      fetchMuridList();
+      // Hash the password
+      const hashedPassword = await hashPassword(formData.password);
+
+      // Add the new murid to the database
+      const result = await sql`INSERT INTO users (email, password, namaLengkap, nomorInduk, role)
+                               VALUES (${formData.email}, ${hashedPassword}, ${formData.namaLengkap}, ${formData.nomorInduk}, 'user')
+                               RETURNING *`;
+
+      if (result && result.length > 0) {
+        alert('Murid berhasil ditambahkan');
+        setShowForm(false);
+        setFormData({
+          namaLengkap: '',
+          email: '',
+          nomorInduk: '',
+          password: ''
+        });
+        fetchMuridList();
+      } else {
+        throw new Error('Gagal menambahkan murid');
+      }
     } catch (error: any) {
       console.error('Error adding murid:', error);
       alert('Gagal menambahkan murid: ' + error.message);

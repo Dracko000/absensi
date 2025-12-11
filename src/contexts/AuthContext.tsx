@@ -4,6 +4,18 @@ import React, { createContext, useContext, useEffect, useState, ReactNode } from
 import { authenticateUser, generateToken, getUserFromToken } from '@/lib/jwtAuth';
 import { UserRole } from '@/lib/authUtils';
 
+// Define User type to match the interface in jwtAuth.ts
+interface User {
+  id: string;
+  email: string;
+  password: string;
+  namaLengkap: string;
+  nomorInduk: string;
+  role: 'superadmin' | 'admin' | 'user';
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 interface AuthContextType {
   user: any;
   userDetails: { id: string; email: string; namaLengkap: string; nomorInduk: string; role: UserRole } | null;
@@ -48,9 +60,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     const mockUser = {
       id: `mock-${randomRole}-${Date.now()}`,
       email: `${randomRole}@demo.test`,
+      password: '', // Not stored in client
       role: randomRole,
       nomorInduk: `${randomRole.toUpperCase()}${Math.floor(1000 + Math.random() * 9000)}`,
-      namaLengkap: `${randomRole === 'superadmin' ? 'Superadmin Demo' : randomRole === 'admin' ? 'Guru Demo' : 'Murid Demo'} ${Math.floor(100 + Math.random() * 900)}`
+      namaLengkap: `${randomRole === 'superadmin' ? 'Superadmin Demo' : randomRole === 'admin' ? 'Guru Demo' : 'Murid Demo'} ${Math.floor(100 + Math.random() * 900)}`,
+      createdAt: new Date(),
+      updatedAt: new Date()
     };
 
     setUser(mockUser);
@@ -119,9 +134,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const mockUser = {
         id: `mock-${mockRole}-1`,
         email: `${mockRole}@sekolah.test`,
+        password: '', // Not stored in client
         role: mockRole,
         nomorInduk: `${mockRole.toUpperCase()}001`,
-        namaLengkap: `Mock ${mockRole === 'superadmin' ? 'Superadmin' : mockRole === 'admin' ? 'Admin' : 'User'} 1`
+        namaLengkap: `Mock ${mockRole === 'superadmin' ? 'Superadmin' : mockRole === 'admin' ? 'Admin' : 'User'} 1`,
+        createdAt: new Date(),
+        updatedAt: new Date()
       };
 
       setUser(mockUser);

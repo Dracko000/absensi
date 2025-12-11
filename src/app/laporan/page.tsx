@@ -5,8 +5,17 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import Header from '@/components/Header';
 import Sidebar from '@/components/Sidebar';
-import { AttendanceType } from '@prisma/client';
 import { exportToExcel, formatAttendanceForExport } from '@/lib/excelUtils';
+import sql from '@/lib/neonClient';
+
+// Define AttendanceType as both type and constant for runtime usage
+type AttendanceType = 'guru' | 'murid';
+
+// Create runtime object
+const AttendanceType = {
+  guru: 'guru' as const,
+  murid: 'murid' as const,
+};
 
 export default function LaporanPage() {
   const router = useRouter();
@@ -27,70 +36,57 @@ export default function LaporanPage() {
 
   const fetchAbsensiRecords = async () => {
     try {
-      // Database functionality is currently disabled
-      console.warn("Database functionality disabled - using mock data");
-      // Using mock data since database access is disabled
-      if (userRole === 'superadmin') {
-        // Superadmin can see all attendance records
-        const mockRecords = [];
+      // Build the query based on filters
+      let query;
 
-        // Add student records
-        mockRecords.push({
-          id: 'mock-s1',
-          userId: 'mock-student-1',
-          tanggal: filterTanggal ? new Date(filterTanggal) : new Date(Date.now() - 86400000), // Yesterday or filtered date
-          jamMasuk: filterTanggal ? new Date(`${filterTanggal}T08:00:00`) : new Date(Date.now() - 86400000 + 8 * 3600000),
-          jamKeluar: filterTanggal ? new Date(`${filterTanggal}T15:00:00`) : new Date(Date.now() - 86400000 + 15 * 3600000),
-          jenisAbsensi: filterJenis === 'all' || filterJenis === 'murid' ? 'murid' : (filterJenis as AttendanceType),
-          barcode: 'mock-barcode',
-          keterangan: 'Hadir',
-          createdAt: new Date(),
-          user: {
-            id: 'mock-student-1',
-            email: 'murid1@sekolah.test',
-            password: '',
-            namaLengkap: 'Murid Satu',
-            nomorInduk: 'MURID001',
-            role: 'user',
-            createdAt: new Date(),
-            updatedAt: new Date()
-          }
-        });
-
-        // Add teacher records
-        mockRecords.push({
-          id: 'mock-t1',
-          userId: 'mock-teacher-1',
-          tanggal: filterTanggal ? new Date(filterTanggal) : new Date(Date.now() - 86400000), // Yesterday or filtered date
-          jamMasuk: filterTanggal ? new Date(`${filterTanggal}T07:30:00`) : new Date(Date.now() - 86400000 + 7.5 * 3600000),
-          jamKeluar: filterTanggal ? new Date(`${filterTanggal}T16:00:00`) : new Date(Date.now() - 86400000 + 16 * 3600000),
-          jenisAbsensi: filterJenis === 'all' || filterJenis === 'guru' ? 'guru' : (filterJenis as AttendanceType),
-          barcode: 'mock-barcode',
-          keterangan: 'Hadir',
-          createdAt: new Date(),
-          user: {
-            id: 'mock-teacher-1',
-            email: 'guru1@sekolah.test',
-            password: '',
-            namaLengkap: 'Guru Satu',
-            nomorInduk: 'GURU001',
-            role: 'admin',
-            createdAt: new Date(),
-            updatedAt: new Date()
-          }
-        });
-
-        // Only include records that match the filtered type
-        let filteredRecords = mockRecords;
-        if (filterJenis && filterJenis !== 'all') {
-          filteredRecords = mockRecords.filter(record => record.jenisAbsensi === filterJenis);
+      if (filterTanggal) {
+        // Filter by specific date
+        if (filterJenis === 'all') {
+          query = await sql`SELECT ar.*, u.namaLengkap, u.nomorInduk, u.role
+                            FROM attendance_records ar
+                            JOIN users u ON ar.userId = u.id
+                            WHERE ar.tanggal::date = ${filterTanggal}::date
+                            ORDER BY ar.tanggal DESC`;
+        } else {
+          query = await sql`SELECT ar.*, u.namaLengkap, u.nomorInduk, u.role
+                            FROM attendance_records ar
+                            JOIN users u ON ar.userId = u.id
+                            WHERE ar.jenisAbsensi = ${filterJenis} AND ar.tanggal::date = ${filterTanggal}::date
+                            ORDER BY ar.tanggal DESC`;
         }
-
-        setAbsensiRecords(filteredRecords);
+      } else if (filterBulan && filterTahun) {
+        // Filter by month and year
+        const dateFilter = `${filterTahun}-${filterBulan}`;
+        if (filterJenis === 'all') {
+          query = await sql`SELECT ar.*, u.namaLengkap, u.nomorInduk, u.role
+                            FROM attendance_records ar
+                            JOIN users u ON ar.userId = u.id
+                            WHERE ar.tanggal::text LIKE ${dateFilter + '%'}
+                            ORDER BY ar.tanggal DESC`;
+        } else {
+          query = await sql`SELECT ar.*, u.namaLengkap, u.nomorInduk, u.role
+                            FROM attendance_records ar
+                            JOIN users u ON ar.userId = u.id
+                            WHERE ar.jenisAbsensi = ${filterJenis} AND ar.tanggal::text LIKE ${dateFilter + '%'}
+                            ORDER BY ar.tanggal DESC`;
+        }
       } else {
-        // Other roles shouldn't access this page
-        setAbsensiRecords([]);
+        // No specific date filter - get all records
+        if (filterJenis === 'all') {
+          query = await sql`SELECT ar.*, u.namaLengkap, u.nomorInduk, u.role
+                            FROM attendance_records ar
+                            JOIN users u ON ar.userId = u.id
+                            ORDER BY ar.tanggal DESC`;
+        } else {
+          query = await sql`SELECT ar.*, u.namaLengkap, u.nomorInduk, u.role
+                            FROM attendance_records ar
+                            JOIN users u ON ar.userId = u.id
+                            WHERE ar.jenisAbsensi = ${filterJenis}
+                            ORDER BY ar.tanggal DESC`;
+        }
       }
+
+      setAbsensiRecords(query);
     } catch (error: any) {
       console.error('Error fetching attendance records:', error);
       alert('Gagal memuat data laporan: ' + error.message);

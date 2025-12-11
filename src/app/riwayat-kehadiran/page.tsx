@@ -5,7 +5,16 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import Header from '@/components/Header';
 import Sidebar from '@/components/Sidebar';
-import { AttendanceType } from '@prisma/client';
+import sql from '@/lib/neonClient';
+
+// Define AttendanceType as both type and constant for runtime usage
+type AttendanceType = 'guru' | 'murid';
+
+// Create runtime object
+const AttendanceType = {
+  guru: 'guru' as const,
+  murid: 'murid' as const,
+};
 
 export default function RiwayatKehadiranPage() {
   const router = useRouter();
@@ -25,76 +34,26 @@ export default function RiwayatKehadiranPage() {
     if (!userDetails?.id) return;
 
     try {
-      // Database functionality is currently disabled
-      console.warn("Database functionality disabled - using mock data");
-      // Using mock data since database access is disabled
       // Only user (student) should see their own attendance records
       if (userDetails.role === 'user') {
-        setAbsensiRecords([
-          {
-            id: 'mock-a1',
-            userId: userDetails.id,
-            tanggal: new Date(Date.now() - 86400000), // Yesterday
-            jamMasuk: new Date(Date.now() - 86400000 + 8 * 3600000), // Yesterday at 8 AM
-            jamKeluar: new Date(Date.now() - 86400000 + 15 * 3600000), // Yesterday at 3 PM
-            jenisAbsensi: 'murid',
-            barcode: 'mock-barcode',
-            keterangan: 'Hadir',
-            createdAt: new Date(),
-            user: {
-              id: userDetails.id,
-              email: userDetails.email,
-              password: '',
-              namaLengkap: userDetails.namaLengkap,
-              nomorInduk: userDetails.nomorInduk,
-              role: userDetails.role,
-              createdAt: new Date(),
-              updatedAt: new Date()
-            }
-          },
-          {
-            id: 'mock-a2',
-            userId: userDetails.id,
-            tanggal: new Date(), // Today
-            jamMasuk: new Date(Date.now() + 8 * 3600000), // Today at 8 AM
-            jamKeluar: null, // No exit time yet
-            jenisAbsensi: 'murid',
-            barcode: 'mock-barcode',
-            keterangan: 'Hadir',
-            createdAt: new Date(),
-            user: {
-              id: userDetails.id,
-              email: userDetails.email,
-              password: '',
-              namaLengkap: userDetails.namaLengkap,
-              nomorInduk: userDetails.nomorInduk,
-              role: userDetails.role,
-              createdAt: new Date(),
-              updatedAt: new Date()
-            }
-          },
-          {
-            id: 'mock-a3',
-            userId: userDetails.id,
-            tanggal: new Date(Date.now() - 86400000 * 2), // 2 days ago
-            jamMasuk: new Date(Date.now() - 86400000 * 2 + 8 * 3600000), // 2 days ago at 8 AM
-            jamKeluar: new Date(Date.now() - 86400000 * 2 + 15 * 3600000), // 2 days ago at 3 PM
-            jenisAbsensi: 'murid',
-            barcode: 'mock-barcode',
-            keterangan: 'Hadir',
-            createdAt: new Date(),
-            user: {
-              id: userDetails.id,
-              email: userDetails.email,
-              password: '',
-              namaLengkap: userDetails.namaLengkap,
-              nomorInduk: userDetails.nomorInduk,
-              role: userDetails.role,
-              createdAt: new Date(),
-              updatedAt: new Date()
-            }
-          }
-        ]);
+        let result;
+        if (filterTanggal) {
+          // Filter by specific date
+          result = await sql`SELECT ar.*, u.namaLengkap, u.nomorInduk, u.role
+                             FROM attendance_records ar
+                             JOIN users u ON ar.userId = u.id
+                             WHERE ar.userId = ${userDetails.id} AND ar.tanggal::date = ${filterTanggal}::date
+                             ORDER BY ar.tanggal DESC`;
+        } else {
+          // Get all records for the user
+          result = await sql`SELECT ar.*, u.namaLengkap, u.nomorInduk, u.role
+                             FROM attendance_records ar
+                             JOIN users u ON ar.userId = u.id
+                             WHERE ar.userId = ${userDetails.id}
+                             ORDER BY ar.tanggal DESC`;
+        }
+
+        setAbsensiRecords(result);
       } else {
         // Admin or superadmin shouldn't be on this page
         setAbsensiRecords([]);

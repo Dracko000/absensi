@@ -6,6 +6,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import Header from '@/components/Header';
 import Sidebar from '@/components/Sidebar';
 import { hashPassword } from '@/lib/jwtAuth';
+import sql from '@/lib/neonClient';
 
 export default function ManajemenGuruPage() {
   const router = useRouter();
@@ -29,36 +30,9 @@ export default function ManajemenGuruPage() {
 
   const fetchGuruList = async () => {
     try {
-      // Database functionality is currently disabled
-      console.warn("Database functionality disabled - using mock data");
-      // Using mock data since database access is disabled
-      // Only superadmin can see all teachers, admin shouldn't have access to this page
-      if (userRole === 'admin') {
-        // Admin should not see this page, redirect handled by auth check
-        setGuruList([]);
-      } else {
-        // Superadmin can see all teachers
-        setGuruList([
-          {
-            id: 'mock-1',
-            email: 'guru1@sekolah.test',
-            namaLengkap: 'Guru Satu',
-            nomorInduk: 'GURU001',
-            role: 'admin',
-            createdAt: new Date(),
-            updatedAt: new Date()
-          },
-          {
-            id: 'mock-2',
-            email: 'guru2@sekolah.test',
-            namaLengkap: 'Guru Dua',
-            nomorInduk: 'GURU002',
-            role: 'admin',
-            createdAt: new Date(),
-            updatedAt: new Date()
-          }
-        ]);
-      }
+      // Fetch all users with role 'admin' (guru) from the database
+      const result = await sql`SELECT id, email, namaLengkap, nomorInduk, role, createdAt, updatedAt FROM users WHERE role = 'admin'`;
+      setGuruList(result);
     } catch (error: any) {
       console.error('Error fetching guru list:', error);
       alert('Gagal memuat daftar guru: ' + error.message);
@@ -69,17 +43,27 @@ export default function ManajemenGuruPage() {
     e.preventDefault();
 
     try {
-      // Database functionality is currently disabled
-      console.warn("Database functionality disabled - add guru not available");
-      alert('Fitur tambah guru dinonaktifkan karena akses database sedang bermasalah.');
-      setShowForm(false);
-      setFormData({
-        namaLengkap: '',
-        email: '',
-        nomorInduk: '',
-        password: ''
-      });
-      fetchGuruList();
+      // Hash the password
+      const hashedPassword = await hashPassword(formData.password);
+
+      // Add the new guru to the database
+      const result = await sql`INSERT INTO users (email, password, namaLengkap, nomorInduk, role)
+                               VALUES (${formData.email}, ${hashedPassword}, ${formData.namaLengkap}, ${formData.nomorInduk}, 'admin')
+                               RETURNING *`;
+
+      if (result && result.length > 0) {
+        alert('Guru berhasil ditambahkan');
+        setShowForm(false);
+        setFormData({
+          namaLengkap: '',
+          email: '',
+          nomorInduk: '',
+          password: ''
+        });
+        fetchGuruList();
+      } else {
+        throw new Error('Gagal menambahkan guru');
+      }
     } catch (error: any) {
       console.error('Error adding guru:', error);
       alert('Gagal menambahkan guru: ' + error.message);

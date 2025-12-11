@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { hashPassword } from '@/lib/jwtAuth';
 import Link from 'next/link';
+import sql from '@/lib/neonClient';
 
 export default function SignupPage() {
   const [email, setEmail] = useState('');
@@ -22,10 +23,18 @@ export default function SignupPage() {
     setError('');
 
     try {
-      // In demo mode, automatically redirect to login since there's no database
-      console.warn("Database functionality disabled - redirecting to login");
-      alert('Aplikasi berjalan dalam mode demo. Silakan masuk ke sistem.');
-      router.push('/login');
+      // Hash the password
+      const hashedPassword = await hashPassword(password);
+
+      // Insert the new user into the database
+      const result = await sql`INSERT INTO users (email, password, namaLengkap, nomorInduk, role) VALUES (${email}, ${hashedPassword}, ${namaLengkap}, ${nomorInduk}, ${userRole}) RETURNING *`;
+
+      if (result && result.length > 0) {
+        alert('Akun berhasil dibuat. Silakan masuk ke sistem.');
+        router.push('/login');
+      } else {
+        throw new Error('Gagal membuat akun');
+      }
     } catch (err: any) {
       console.error('Signup error:', err);
       setError(err.message || 'Gagal membuat akun. Silakan coba lagi.');

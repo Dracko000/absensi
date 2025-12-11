@@ -6,6 +6,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import Header from '@/components/Header';
 import Sidebar from '@/components/Sidebar';
 import { exportToExcel, formatAttendanceForExport } from '@/lib/excelUtils';
+import sql from '@/lib/neonClient';
 
 export default function LaporanHarianPage() {
   const router = useRouter();
@@ -23,76 +24,16 @@ export default function LaporanHarianPage() {
 
   const fetchAbsensiRecords = async () => {
     try {
-      // Database functionality is currently disabled
-      console.warn("Database functionality disabled - using mock data");
-      // Using mock data since database access is disabled
       // Admin (Guru) can only see student attendance for the day
       if (userRole === 'admin') {
-        setAbsensiRecords([
-          {
-            id: 'mock-s1',
-            userId: 'mock-student-1',
-            tanggal: new Date(tanggal),
-            jamMasuk: new Date(`${tanggal}T08:00:00`),
-            jamKeluar: new Date(`${tanggal}T15:00:00`),
-            jenisAbsensi: 'murid',
-            barcode: 'mock-barcode',
-            keterangan: 'Hadir',
-            createdAt: new Date(),
-            user: {
-              id: 'mock-student-1',
-              email: 'murid1@sekolah.test',
-              password: '',
-              namaLengkap: 'Murid Satu',
-              nomorInduk: 'MURID001',
-              role: 'user',
-              createdAt: new Date(),
-              updatedAt: new Date()
-            }
-          },
-          {
-            id: 'mock-s2',
-            userId: 'mock-student-2',
-            tanggal: new Date(tanggal),
-            jamMasuk: new Date(`${tanggal}T08:15:00`),
-            jamKeluar: new Date(`${tanggal}T15:00:00`),
-            jenisAbsensi: 'murid',
-            barcode: 'mock-barcode',
-            keterangan: 'Hadir',
-            createdAt: new Date(),
-            user: {
-              id: 'mock-student-2',
-              email: 'murid2@sekolah.test',
-              password: '',
-              namaLengkap: 'Murid Dua',
-              nomorInduk: 'MURID002',
-              role: 'user',
-              createdAt: new Date(),
-              updatedAt: new Date()
-            }
-          },
-          {
-            id: 'mock-s3',
-            userId: 'mock-student-3',
-            tanggal: new Date(tanggal),
-            jamMasuk: null, // Tidak masuk
-            jamKeluar: null,
-            jenisAbsensi: 'murid',
-            barcode: 'mock-barcode',
-            keterangan: 'Alfa',
-            createdAt: new Date(),
-            user: {
-              id: 'mock-student-3',
-              email: 'murid3@sekolah.test',
-              password: '',
-              namaLengkap: 'Murid Tiga',
-              nomorInduk: 'MURID003',
-              role: 'user',
-              createdAt: new Date(),
-              updatedAt: new Date()
-            }
-          }
-        ]);
+        // Fetch student attendance records for the specific date
+        const result = await sql`SELECT ar.*, u.namaLengkap, u.nomorInduk, u.role
+                                 FROM attendance_records ar
+                                 JOIN users u ON ar.userId = u.id
+                                 WHERE u.role = 'user' AND ar.tanggal::date = ${tanggal}::date
+                                 ORDER BY ar.tanggal DESC`;
+
+        setAbsensiRecords(result);
       } else {
         // Other roles shouldn't access this page
         setAbsensiRecords([]);

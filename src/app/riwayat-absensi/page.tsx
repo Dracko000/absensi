@@ -5,7 +5,16 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import Header from '@/components/Header';
 import Sidebar from '@/components/Sidebar';
-import { AttendanceType } from '@prisma/client';
+import sql from '@/lib/neonClient';
+
+// Define AttendanceType as both type and constant for runtime usage
+type AttendanceType = 'guru' | 'murid';
+
+// Create runtime object
+const AttendanceType = {
+  guru: 'guru' as const,
+  murid: 'murid' as const,
+};
 
 export default function RiwayatAbsensiPage() {
   const router = useRouter();
@@ -24,110 +33,66 @@ export default function RiwayatAbsensiPage() {
 
   const fetchAbsensiRecords = async () => {
     try {
-      // Database functionality is currently disabled
-      console.warn("Database functionality disabled - using mock data");
-      // Using mock data since database access is disabled
+      // Build the query based on user role and filters
+      let query: any[];
       if (userRole === 'admin') {
         // Admin (Guru) can only see student attendance
-        setAbsensiRecords([
-          {
-            id: 'mock-a1',
-            userId: 'mock-student-1',
-            tanggal: new Date(Date.now() - 86400000), // Yesterday
-            jamMasuk: new Date(Date.now() - 86400000 + 8 * 3600000), // Yesterday at 8 AM
-            jamKeluar: new Date(Date.now() - 86400000 + 15 * 3600000), // Yesterday at 3 PM
-            jenisAbsensi: 'murid',
-            barcode: 'mock-barcode',
-            keterangan: 'Hadir',
-            createdAt: new Date(),
-            user: {
-              id: 'mock-student-1',
-              email: 'murid1@sekolah.test',
-              password: '',
-              namaLengkap: 'Murid Satu',
-              nomorInduk: 'MURID001',
-              role: 'user',
-              createdAt: new Date(),
-              updatedAt: new Date()
-            }
-          },
-          {
-            id: 'mock-a2',
-            userId: 'mock-student-2',
-            tanggal: new Date(), // Today
-            jamMasuk: new Date(Date.now() + 8 * 3600000), // Today at 8 AM
-            jamKeluar: null, // No exit time yet
-            jenisAbsensi: 'murid',
-            barcode: 'mock-barcode',
-            keterangan: 'Hadir',
-            createdAt: new Date(),
-            user: {
-              id: 'mock-student-2',
-              email: 'murid2@sekolah.test',
-              password: '',
-              namaLengkap: 'Murid Dua',
-              nomorInduk: 'MURID002',
-              role: 'user',
-              createdAt: new Date(),
-              updatedAt: new Date()
-            }
-          }
-        ]);
+        if (filterTanggal && filterJenis) {
+          query = await sql`SELECT ar.*, u.namaLengkap, u.nomorInduk, u.role
+                            FROM attendance_records ar
+                            JOIN users u ON ar.userId = u.id
+                            WHERE u.role = 'user' AND ar.jenisAbsensi = ${filterJenis} AND ar.tanggal::date = ${filterTanggal}::date
+                            ORDER BY ar.tanggal DESC`;
+        } else if (filterTanggal) {
+          query = await sql`SELECT ar.*, u.namaLengkap, u.nomorInduk, u.role
+                            FROM attendance_records ar
+                            JOIN users u ON ar.userId = u.id
+                            WHERE u.role = 'user' AND ar.tanggal::date = ${filterTanggal}::date
+                            ORDER BY ar.tanggal DESC`;
+        } else if (filterJenis) {
+          query = await sql`SELECT ar.*, u.namaLengkap, u.nomorInduk, u.role
+                            FROM attendance_records ar
+                            JOIN users u ON ar.userId = u.id
+                            WHERE u.role = 'user' AND ar.jenisAbsensi = ${filterJenis}
+                            ORDER BY ar.tanggal DESC`;
+        } else {
+          query = await sql`SELECT ar.*, u.namaLengkap, u.nomorInduk, u.role
+                            FROM attendance_records ar
+                            JOIN users u ON ar.userId = u.id
+                            WHERE u.role = 'user'
+                            ORDER BY ar.tanggal DESC`;
+        }
       } else if (userRole === 'superadmin') {
         // Superadmin can see all attendance (teacher and student)
-        const mockRecords = [];
-
-        // Add student attendance records
-        mockRecords.push({
-          id: 'mock-s1',
-          userId: 'mock-student-1',
-          tanggal: new Date(Date.now() - 86400000), // Yesterday
-          jamMasuk: new Date(Date.now() - 86400000 + 8 * 3600000), // Yesterday at 8 AM
-          jamKeluar: new Date(Date.now() - 86400000 + 15 * 3600000), // Yesterday at 3 PM
-          jenisAbsensi: 'murid',
-          barcode: 'mock-barcode',
-          keterangan: 'Hadir',
-          createdAt: new Date(),
-          user: {
-            id: 'mock-student-1',
-            email: 'murid1@sekolah.test',
-            password: '',
-            namaLengkap: 'Murid Satu',
-            nomorInduk: 'MURID001',
-            role: 'user',
-            createdAt: new Date(),
-            updatedAt: new Date()
-          }
-        });
-
-        // Add teacher attendance records
-        mockRecords.push({
-          id: 'mock-t1',
-          userId: 'mock-teacher-1',
-          tanggal: new Date(Date.now() - 86400000), // Yesterday
-          jamMasuk: new Date(Date.now() - 86400000 + 7 * 3600000), // Yesterday at 7 AM
-          jamKeluar: new Date(Date.now() - 86400000 + 16 * 3600000), // Yesterday at 4 PM
-          jenisAbsensi: 'guru',
-          barcode: 'mock-barcode',
-          keterangan: 'Hadir',
-          createdAt: new Date(),
-          user: {
-            id: 'mock-teacher-1',
-            email: 'guru1@sekolah.test',
-            password: '',
-            namaLengkap: 'Guru Satu',
-            nomorInduk: 'GURU001',
-            role: 'admin',
-            createdAt: new Date(),
-            updatedAt: new Date()
-          }
-        });
-
-        setAbsensiRecords(mockRecords);
+        if (filterTanggal && filterJenis) {
+          query = await sql`SELECT ar.*, u.namaLengkap, u.nomorInduk, u.role
+                            FROM attendance_records ar
+                            JOIN users u ON ar.userId = u.id
+                            WHERE ar.jenisAbsensi = ${filterJenis} AND ar.tanggal::date = ${filterTanggal}::date
+                            ORDER BY ar.tanggal DESC`;
+        } else if (filterTanggal) {
+          query = await sql`SELECT ar.*, u.namaLengkap, u.nomorInduk, u.role
+                            FROM attendance_records ar
+                            JOIN users u ON ar.userId = u.id
+                            WHERE ar.tanggal::date = ${filterTanggal}::date
+                            ORDER BY ar.tanggal DESC`;
+        } else if (filterJenis) {
+          query = await sql`SELECT ar.*, u.namaLengkap, u.nomorInduk, u.role
+                            FROM attendance_records ar
+                            JOIN users u ON ar.userId = u.id
+                            WHERE ar.jenisAbsensi = ${filterJenis}
+                            ORDER BY ar.tanggal DESC`;
+        } else {
+          query = await sql`SELECT ar.*, u.namaLengkap, u.nomorInduk, u.role
+                            FROM attendance_records ar
+                            JOIN users u ON ar.userId = u.id
+                            ORDER BY ar.tanggal DESC`;
+        }
       } else {
-        // User (student) shouldn't be on this page
-        setAbsensiRecords([]);
+        query = [];
       }
+
+      setAbsensiRecords(query);
     } catch (error: any) {
       console.error('Error fetching attendance records:', error);
       alert('Gagal memuat riwayat absensi: ' + error.message);

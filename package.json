@@ -25,6 +25,7 @@
   "dependencies": {
     "@headlessui/react": "^2.2.9",
     "@heroicons/react": "^2.2.0",
+    "@neondatabase/serverless": "^0.10.4",
     "@prisma/client": "^7.1.0",
     "@zxing/library": "^0.21.3",
     "bcryptjs": "^2.4.3",

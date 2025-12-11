@@ -1,6 +1,18 @@
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
-import { User } from '@prisma/client';
+import sql from './neonClient';
+
+// Define User type based on our schema
+interface User {
+  id: string;
+  email: string;
+  password: string;
+  namaLengkap: string;
+  nomorInduk: string;
+  role: 'superadmin' | 'admin' | 'user';
+  createdAt: Date;
+  updatedAt: Date;
+}
 
 // JWT secret from environment variables
 const JWT_SECRET = process.env.JWT_SECRET || '240103800a4d1eda34cc6e9db9b94e88';
@@ -40,25 +52,36 @@ export const comparePassword = async (password: string, hashedPassword: string):
 
 // Authenticate a user by email and password
 export const authenticateUser = async (email: string, password: string): Promise<User | null> => {
-  // For demo implementation, determine role from email for consistent experience
-  let role: UserRole = 'user';
-  if (email.includes('superadmin')) role = 'superadmin';
-  else if (email.includes('admin')) role = 'admin';
-  else if (email.includes('user')) role = 'user';
+  try {
+    // Query the user from Neon database
+    const result = await sql`SELECT id, email, password, namaLengkap, nomorInduk, role, createdAt, updatedAt FROM users WHERE email = ${email}`;
 
-  // Create mock user based on email for consistent role assignment
-  const nomorInduk = `${role.toUpperCase()}${Math.floor(1000 + Math.random() * 9000)}`; // Generate random ID
+    if (result && result.length > 0) {
+      const userData = result[0];
 
-  return {
-    id: `mock-${role}-${Date.now()}`,
-    email,
-    password: '', // Don't expose password
-    namaLengkap: `${role === 'superadmin' ? 'Superadmin Demo' : role === 'admin' ? 'Guru Demo' : 'Murid Demo'} ${Math.floor(100 + Math.random() * 900)}`,
-    nomorInduk,
-    role: role as UserRole,
-    createdAt: new Date(),
-    updatedAt: new Date()
-  };
+      // Compare the provided password with the hashed password
+      const isValidPassword = await comparePassword(password, userData.password);
+
+      if (isValidPassword) {
+        // Return user with proper typing
+        return {
+          id: userData.id,
+          email: userData.email,
+          password: userData.password,
+          namaLengkap: userData.namaLengkap,
+          nomorInduk: userData.nomorInduk,
+          role: userData.role,
+          createdAt: new Date(userData.createdAt),
+          updatedAt: new Date(userData.updatedAt),
+        };
+      }
+    }
+
+    return null; // Return null if user not found or password invalid
+  } catch (error) {
+    console.error('Error authenticating user:', error);
+    return null;
+  }
 };
 
 // Get user info from token
@@ -73,7 +96,7 @@ export const getUserFromToken = (token: string | null): User | null => {
   }
 
   // For this implementation, we'll return a simplified user object
-  // In a real implementation, you might want to validate against DB
+  // The real data would come from the token validation
   return {
     id: decoded.id,
     email: decoded.email,
@@ -81,7 +104,7 @@ export const getUserFromToken = (token: string | null): User | null => {
     nomorInduk: decoded.nomorInduk,
     namaLengkap: decoded.namaLengkap,
     password: '', // Don't expose password
-    createdAt: new Date(), // Placeholder - would come from DB in real scenario
-    updatedAt: new Date(), // Placeholder - would come from DB in real scenario
+    createdAt: new Date(decoded.createdAt) || new Date(), // Would come from DB in real scenario
+    updatedAt: new Date(decoded.updatedAt) || new Date(), // Would come from DB in real scenario
   };
 };

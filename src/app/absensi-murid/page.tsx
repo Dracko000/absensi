@@ -7,7 +7,16 @@ import Header from '@/components/Header';
 import Sidebar from '@/components/Sidebar';
 import BarcodeScanner from '@/components/BarcodeScanner';
 import BarcodeGenerator from '@/components/BarcodeGenerator';
-import { AttendanceType } from '@prisma/client';
+import sql from '@/lib/neonClient';
+
+// Define AttendanceType as both type and constant for runtime usage
+type AttendanceType = 'guru' | 'murid';
+
+// Create runtime object
+const AttendanceType = {
+  guru: 'guru' as const,
+  murid: 'murid' as const,
+};
 
 export default function AbsensiMuridPage() {
   const router = useRouter();
@@ -34,31 +43,27 @@ export default function AbsensiMuridPage() {
 
   const fetchUserByBarcode = async (barcode: string) => {
     try {
-      // Database functionality is currently disabled
-      console.warn("Database functionality disabled - using mock data");
-      // Using mock data since database access is disabled
-      const user = {
-        id: `mock-user-${barcode}`,
-        email: `murid-${barcode}@sekolah.test`,
-        password: '',
-        namaLengkap: `Murid ${barcode}`,
-        nomorInduk: barcode,
-        role: 'user',
-        createdAt: new Date(),
-        updatedAt: new Date()
-      };
+      // Query the user from Neon database by barcode (which is stored as nomorInduk)
+      const result = await sql`SELECT id, email, password, namaLengkap, nomorInduk, role, createdAt, updatedAt FROM users WHERE nomorInduk = ${barcode}`;
 
-      if (!user) {
+      if (result && result.length > 0) {
+        const user = result[0];
+
+        if (!user) {
+          alert('Murid tidak ditemukan dengan barcode tersebut');
+          return;
+        }
+
+        if (user.role !== 'user') {
+          alert('Barcode ini bukan milik murid');
+          return;
+        }
+
+        setSelectedUser(user);
+      } else {
         alert('Murid tidak ditemukan dengan barcode tersebut');
         return;
       }
-
-      if (user.role !== 'user') {
-        alert('Barcode ini bukan milik murid');
-        return;
-      }
-
-      setSelectedUser(user);
     } catch (error) {
       console.error('Error fetching user:', error);
       alert('Terjadi kesalahan saat mencari murid');
@@ -76,35 +81,30 @@ export default function AbsensiMuridPage() {
     }
 
     try {
-      // Database functionality is currently disabled
-      console.warn("Database functionality disabled - attendance not saved to database");
-      // Check if attendance already exists for this user and date (mock check)
-      // Using mock data since database access is disabled
-      const date = new Date(tanggal);
+      // Check if attendance already exists for this user and date
+      const existingRecord = await sql`SELECT * FROM attendance_records WHERE userId = ${selectedUser.id} AND tanggal::date = ${tanggal}::date`;
 
-      // Mock check for existing record
-      // In a real implementation, this would query the database
-      const existingRecord = false; // Always assume no existing record for mock
-
-      if (existingRecord) {
+      if (existingRecord && existingRecord.length > 0) {
         alert('Kehadiran untuk tanggal ini sudah dicatat');
         return;
       }
 
-      // Mock attendance record creation
-      console.log('Attendance record would be created with:', {
-        userId: selectedUser.id,
-        tanggal: date,
-        jamMasuk: new Date(), // Current date and time
-        jenisAbsensi: AttendanceType.murid,
-        barcode: scannedBarcode || selectedUser.nomorInduk,
-        keterangan: keterangan
-      });
+      // Create attendance record in the database
+      const date = new Date(tanggal);
+      const now = new Date(); // Current time for jamMasuk
 
-      alert('Absensi murid berhasil disimpan (data tidak disimpan ke database)');
-      setScannedBarcode(null);
-      setSelectedUser(null);
-      setKeterangan('');
+      const result = await sql`INSERT INTO attendance_records (userId, tanggal, jamMasuk, jenisAbsensi, barcode, keterangan)
+                               VALUES (${selectedUser.id}, ${date}, ${now}, ${AttendanceType.murid}, ${scannedBarcode || selectedUser.nomorInduk}, ${keterangan})
+                               RETURNING *`;
+
+      if (result && result.length > 0) {
+        alert('Absensi murid berhasil disimpan');
+        setScannedBarcode(null);
+        setSelectedUser(null);
+        setKeterangan('');
+      } else {
+        throw new Error('Gagal menyimpan data absensi');
+      }
     } catch (error: any) {
       console.error('Error saving attendance:', error);
       alert('Gagal menyimpan absensi: ' + error.message);
