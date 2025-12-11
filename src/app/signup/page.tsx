@@ -22,9 +22,13 @@ export default function SignupPage() {
     setError('');
 
     try {
-      // Database functionality is currently disabled
+      // Database functionality is currently disabled in mock mode
       console.warn("Database functionality disabled - signup not available");
-      alert('Fitur pendaftaran akun dinonaktifkan karena akses database sedang bermasalah.');
+      alert('Fitur pendaftaran akun dinonaktifkan dalam versi demo. Silakan gunakan akun demo berikut:\n\n' +
+            'Superadmin: superadmin@sekolah.test\n' +
+            'Admin: admin@sekolah.test\n' +
+            'User: user@sekolah.test\n' +
+            'Password: 123456');
       router.push('/login');
     } catch (err: any) {
       console.error('Signup error:', err);

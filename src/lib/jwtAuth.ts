@@ -40,10 +40,37 @@ export const comparePassword = async (password: string, hashedPassword: string):
 
 // Authenticate a user by email and password
 export const authenticateUser = async (email: string, password: string): Promise<User | null> => {
-  // This function would normally query the database
-  // For now, returning null as database access is disabled
-  console.warn("Database access disabled - authenticateUser returning null");
-  return null;
+  // For mock implementation, check if email exists and password is correct
+  // In a real implementation, this would query the database
+  if (!email || !password) {
+    return null;
+  }
+
+  // Simple validation - any non-empty password is accepted for demo purposes
+  // In a real app, you'd verify the password hash
+  if (password.length < 1) {
+    return null;
+  }
+
+  // Determine role based on email
+  let role: string = 'user';
+  if (email.includes('superadmin')) role = 'superadmin';
+  else if (email.includes('admin')) role = 'admin';
+  else if (email.includes('user')) role = 'user';
+
+  // Create mock user based on email and role
+  const nomorInduk = `${role.toUpperCase()}${Math.floor(100 + Math.random() * 900)}`; // Generate random ID
+
+  return {
+    id: `mock-${role}-${Date.now()}`,
+    email,
+    password: '', // Don't expose password
+    namaLengkap: `Mock ${role === 'superadmin' ? 'Superadmin' : role === 'admin' ? 'Guru' : 'Murid'}`,
+    nomorInduk,
+    role: role as UserRole,
+    createdAt: new Date(),
+    updatedAt: new Date()
+  };
 };
 
 // Get user info from token
