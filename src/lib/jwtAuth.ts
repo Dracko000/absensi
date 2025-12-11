@@ -1,7 +1,6 @@
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 import getNeonClient from './neonClient';
-const sql = getNeonClient();
 
 // Define User type based on our schema
 interface User {
@@ -17,6 +16,15 @@ interface User {
 
 // JWT secret from environment variables
 const JWT_SECRET = process.env.JWT_SECRET || '240103800a4d1eda34cc6e9db9b94e88';
+
+// Function to get database client safely
+const getDbClient = () => {
+  const sql = getNeonClient();
+  if (!sql) {
+    throw new Error('Database client not available');
+  }
+  return sql;
+};
 
 // Generate a JWT token for a user using the provided secret
 export const generateToken = (user: User): string => {
@@ -34,8 +42,13 @@ export const generateToken = (user: User): string => {
 // Verify a JWT token and return the decoded payload
 export const verifyToken = (token: string): any => {
   try {
+    // Ensure token and secret are valid before attempting to verify
+    if (!token || typeof token !== 'string' || !JWT_SECRET) {
+      return null;
+    }
     return jwt.verify(token, JWT_SECRET);
   } catch (error) {
+    console.error('Error verifying token:', error);
     return null;
   }
 };
@@ -55,11 +68,7 @@ export const comparePassword = async (password: string, hashedPassword: string):
 export const authenticateUser = async (email: string, password: string): Promise<User | null> => {
   try {
     // Get the database client
-    const dbClient = getNeonClient();
-    if (!dbClient) {
-      console.error('Database client not available for authentication');
-      return null;
-    }
+    const dbClient = getDbClient();
 
     // Query the user from Neon database
     const result = await dbClient`SELECT id, email, password, namaLengkap, nomorInduk, role, createdAt, updatedAt FROM users WHERE email = ${email}`;
