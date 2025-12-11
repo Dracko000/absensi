@@ -7,10 +7,11 @@ const createNeonClient = () => {
     return null;
   }
 
-  const connectionString = process.env.DATABASE_URL;
+  // Use DATABASE_URL or fallback to POSTGRES_URL (for Neon deployments)
+  const connectionString = process.env.DATABASE_URL || process.env.POSTGRES_URL;
 
   if (!connectionString) {
-    console.warn('DATABASE_URL environment variable is not set');
+    console.warn('DATABASE_URL or POSTGRES_URL environment variable is not set');
     return null;
   }
 
