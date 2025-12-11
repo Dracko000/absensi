@@ -3,9 +3,9 @@ import bcrypt from 'bcryptjs';
 import { User } from '@prisma/client';
 
 // JWT secret from environment variables
-const JWT_SECRET = process.env.JWT_SECRET || 'fallback_jwt_secret_for_development';
+const JWT_SECRET = process.env.JWT_SECRET || '240103800a4d1eda34cc6e9db9b94e88';
 
-// Generate a JWT token for a user
+// Generate a JWT token for a user using the provided secret
 export const generateToken = (user: User): string => {
   const payload = {
     id: user.id,
@@ -40,32 +40,20 @@ export const comparePassword = async (password: string, hashedPassword: string):
 
 // Authenticate a user by email and password
 export const authenticateUser = async (email: string, password: string): Promise<User | null> => {
-  // For mock implementation, check if email exists and password is correct
-  // In a real implementation, this would query the database
-  if (!email || !password) {
-    return null;
-  }
-
-  // Simple validation - any non-empty password is accepted for demo purposes
-  // In a real app, you'd verify the password hash
-  if (password.length < 1) {
-    return null;
-  }
-
-  // Determine role based on email
-  let role: string = 'user';
+  // For demo implementation, determine role from email for consistent experience
+  let role: UserRole = 'user';
   if (email.includes('superadmin')) role = 'superadmin';
   else if (email.includes('admin')) role = 'admin';
   else if (email.includes('user')) role = 'user';
 
-  // Create mock user based on email and role
-  const nomorInduk = `${role.toUpperCase()}${Math.floor(100 + Math.random() * 900)}`; // Generate random ID
+  // Create mock user based on email for consistent role assignment
+  const nomorInduk = `${role.toUpperCase()}${Math.floor(1000 + Math.random() * 9000)}`; // Generate random ID
 
   return {
     id: `mock-${role}-${Date.now()}`,
     email,
     password: '', // Don't expose password
-    namaLengkap: `Mock ${role === 'superadmin' ? 'Superadmin' : role === 'admin' ? 'Guru' : 'Murid'}`,
+    namaLengkap: `${role === 'superadmin' ? 'Superadmin Demo' : role === 'admin' ? 'Guru Demo' : 'Murid Demo'} ${Math.floor(100 + Math.random() * 900)}`,
     nomorInduk,
     role: role as UserRole,
     createdAt: new Date(),

@@ -34,24 +34,23 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   const signIn = async (email: string, password: string) => {
-    // For mock implementation, extract role from email
-    // In a real app, this would authenticate with the database
-    let mockRole = 'user';
-    if (email.includes('superadmin')) mockRole = 'superadmin';
-    else if (email.includes('admin')) mockRole = 'admin';
+    // For mock implementation, we'll create a random user with a random role
+    // This allows the app to work without requiring specific credentials
+    const roles: UserRole[] = ['superadmin', 'admin', 'user'];
+    const randomRole = roles[Math.floor(Math.random() * roles.length)];
 
     // Store mock role in localStorage for the auth context to use
     if (typeof window !== 'undefined') {
-      localStorage.setItem('mock-role', mockRole);
+      localStorage.setItem('mock-role', randomRole);
     }
 
     // Create mock user data
     const mockUser = {
-      id: `mock-${mockRole}-1`,
-      email,
-      role: mockRole,
-      nomorInduk: `${mockRole.toUpperCase()}001`,
-      namaLengkap: `Mock ${mockRole === 'superadmin' ? 'Superadmin' : mockRole === 'admin' ? 'Admin' : 'User'} 1`
+      id: `mock-${randomRole}-${Date.now()}`,
+      email: `${randomRole}@demo.test`,
+      role: randomRole,
+      nomorInduk: `${randomRole.toUpperCase()}${Math.floor(1000 + Math.random() * 9000)}`,
+      namaLengkap: `${randomRole === 'superadmin' ? 'Superadmin Demo' : randomRole === 'admin' ? 'Guru Demo' : 'Murid Demo'} ${Math.floor(100 + Math.random() * 900)}`
     };
 
     setUser(mockUser);
@@ -67,9 +66,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
     setUserRole(mockUser.role as UserRole);
 
-    // In a real implementation, we would generate and store an actual token
-    // For mock, we just return the mock user data
-    return { user: mockUser, token: 'mock-token' };
+    // Generate JWT token using the mock user data
+    const token = generateToken(mockUser);
+
+    // Store the token in localStorage (for client side)
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('auth-token', token);
+    }
+
+    return { user: mockUser, token };
   };
 
   const signOut = async () => {
@@ -85,28 +90,50 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   // Check active session and set user data
   useEffect(() => {
-    // For demo purposes, create mock user data based on role
-    // In a real application, this would come from the actual token and database
-    const mockRole = localStorage.getItem('mock-role') || 'user'; // Default to user role
+    // Get token from localStorage
+    const token = typeof window !== 'undefined' ? localStorage.getItem('auth-token') : null;
 
-    // Create mock user data
-    const mockUser = {
-      id: `mock-${mockRole}-1`,
-      email: `${mockRole}@sekolah.test`,
-      role: mockRole,
-      nomorInduk: `${mockRole.toUpperCase()}001`,
-      namaLengkap: `Mock ${mockRole === 'superadmin' ? 'Superadmin' : mockRole === 'admin' ? 'Admin' : 'User'} 1`
-    };
+    if (token) {
+      // Verify token and get user info
+      const userInfo = getUserFromToken(token);
 
-    setUser(mockUser);
-    setUserDetails({
-      id: mockUser.id,
-      email: mockUser.email,
-      namaLengkap: mockUser.namaLengkap,
-      nomorInduk: mockUser.nomorInduk,
-      role: mockUser.role as UserRole
-    });
-    setUserRole(mockUser.role as UserRole);
+      if (userInfo) {
+        setUser(userInfo);
+
+        // User details come from the token since database access is disabled
+        setUserDetails({
+          id: userInfo.id,
+          email: userInfo.email,
+          namaLengkap: userInfo.namaLengkap,
+          nomorInduk: userInfo.nomorInduk,
+          role: userInfo.role as UserRole
+        });
+        setUserRole(userInfo.role as UserRole);
+      }
+    } else {
+      // Default mock user when no token exists
+      // For demo purposes, create mock user data based on role
+      const mockRole = localStorage.getItem('mock-role') || 'user'; // Default to user role
+
+      // Create mock user data
+      const mockUser = {
+        id: `mock-${mockRole}-1`,
+        email: `${mockRole}@sekolah.test`,
+        role: mockRole,
+        nomorInduk: `${mockRole.toUpperCase()}001`,
+        namaLengkap: `Mock ${mockRole === 'superadmin' ? 'Superadmin' : mockRole === 'admin' ? 'Admin' : 'User'} 1`
+      };
+
+      setUser(mockUser);
+      setUserDetails({
+        id: mockUser.id,
+        email: mockUser.email,
+        namaLengkap: mockUser.namaLengkap,
+        nomorInduk: mockUser.nomorInduk,
+        role: mockUser.role as UserRole
+      });
+      setUserRole(mockUser.role as UserRole);
+    }
 
     setLoading(false);
   }, []);

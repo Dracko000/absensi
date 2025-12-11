@@ -102,22 +102,7 @@ export default function LoginPage() {
           </div>
 
           <div className="mt-4 p-3 bg-gray-50 rounded-md">
-            <p className="text-xs text-gray-600 mb-2">Demo akun (gunakan email berikut):</p>
-            <div className="text-xs space-y-1">
-              <div className="flex justify-between">
-                <span>Superadmin:</span>
-                <span className="text-indigo-600">superadmin@sekolah.test</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Admin (Guru):</span>
-                <span className="text-indigo-600">admin@sekolah.test</span>
-              </div>
-              <div className="flex justify-between">
-                <span>User (Murid):</span>
-                <span className="text-indigo-600">user@sekolah.test</span>
-              </div>
-              <div className="mt-2 text-gray-500">Password: 123456 (untuk semua akun)</div>
-            </div>
+            <p className="text-xs text-gray-600">Aplikasi demo - masuk dengan kredensial apapun akan membuat akun demo secara otomatis dengan peran acak.</p>
           </div>
 
           <div className="flex items-center justify-between">
